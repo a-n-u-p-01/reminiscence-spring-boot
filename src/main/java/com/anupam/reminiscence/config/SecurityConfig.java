@@ -58,7 +58,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         // 1. BE SPECIFIC: Replace '*' with your actual frontend URL (e.g., localhost:3000 or your Vercel/Netlify URL)
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "https://your-actual-frontend-url.com"));
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "https://reminiscence-react.vercel.app"));
 
         // 2. Methods and Headers
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));

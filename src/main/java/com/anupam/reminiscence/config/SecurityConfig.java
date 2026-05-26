@@ -56,9 +56,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("*")); // Allows all origins, you can restrict this in production
+
+        // 1. BE SPECIFIC: Replace '*' with your actual frontend URL (e.g., localhost:3000 or your Vercel/Netlify URL)
+        configuration.setAllowedOrigins(List.of("http://localhost:5173", "https://your-actual-frontend-url.com"));
+
+        // 2. Methods and Headers
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
+
+        // 3. CRITICAL: Allow credentials (cookies/tokens)
+        configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

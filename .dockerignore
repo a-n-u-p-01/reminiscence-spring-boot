@@ -1,0 +1,10 @@
+target/
+.git/
+.mvn/
+.idea/
+.settings/
+.vscode/
+*.log
+.dockerignore
+Dockerfile
+# Important: Do not include application-prod.properties if it contains secrets

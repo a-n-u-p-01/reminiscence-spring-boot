@@ -165,6 +165,10 @@ public class UserServiceImpl implements UserService {
         LocalDateTime nowTZ = LocalDateTime.now(zoneId);
         userConcept.setLastReviewedAt(nowTZ);
         userConcept.setNextReviewDate(LocalDate.now(zoneId).plusDays(interval));
+        userConcept.setLastReviewedAt(nowTZ);
+        userConcept.setCurrentIntervalDays(interval);
+        userConcept.setMasteryScore(mastery);
+        userConcept.setFailureCount(failures);
         userConcept.setUpdatedAt(nowTZ);
 
         userConceptRepo.save(userConcept);

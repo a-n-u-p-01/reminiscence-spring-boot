@@ -12,6 +12,9 @@ import com.anupam.reminiscence.repo.ConceptRepo;
 import com.anupam.reminiscence.repo.DailyEntryItemRepo;
 import com.anupam.reminiscence.repo.ReviewHistoryRepo;
 import com.anupam.reminiscence.repo.UserConceptRepo;
+import com.anupam.reminiscence.entity.UserEntity;
+import java.time.ZoneId;
+import com.anupam.reminiscence.repo.UserRepository;
 import com.anupam.reminiscence.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,11 +35,13 @@ import static com.anupam.reminiscence.constants.Level.*;
 public class UserServiceImpl implements UserService {
 
     private final DailyEntryItemRepo dailyEntryItemRepo;
+    private final ConceptRepo conceptRepo;
     private final ConceptProcessingService conceptProcessingService;
     private final AIOrchestratorService aiOrchestratorService;
     private final ObjectMapper objectMapper;
     private final UserConceptRepo userConceptRepo;
-    private final ConceptRepo conceptRepo;
+    private final UserRepository userRepository;
+    private final ReviewHistoryRepo reviewHistoryRepo;
 
     @Override
     public void saveDailyEntry(String text, UUID userId) {
@@ -46,13 +51,18 @@ public class UserServiceImpl implements UserService {
                 throw new IllegalArgumentException("Entry text cannot be empty");
             }
 
-            LocalDateTime now = LocalDateTime.now();
-            LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
-            LocalDateTime endOfDay = startOfDay.plusDays(1);
+            // Fetch user's timezone
+            ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
+            LocalDate today = LocalDate.now(zoneId);
+            LocalDate tomorrow = today.plusDays(1);
+            LocalDate nextWeekEnd = today.plusDays(7);
+            LocalDateTime now = LocalDateTime.now(zoneId);
+            LocalDateTime startOfDayDt = today.atStartOfDay();
+            LocalDateTime endOfDayDt = tomorrow.atStartOfDay();
 
             // Check if an entry already exists for today
             DailyEntryItemEntity entry = dailyEntryItemRepo
-                    .findTodayEntryByUserId(userId, startOfDay, endOfDay)
+                    .findTodayEntryByUserId(userId, startOfDayDt, endOfDayDt)
                     .map(existing -> {
                         // Append new text to today's entry, reset to PENDING
                         existing.setRawTopic(text.trim());
@@ -86,7 +96,8 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<ConceptReviewResponse> findAllPending(UUID userId) {
-        LocalDate today = LocalDate.now();
+        ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
+        LocalDate today = LocalDate.now(zoneId);
         List<UserConceptEntity> pendingUserConcepts = userConceptRepo.findPendingReviews(userId, today);
 
         return pendingUserConcepts.stream().map(uc -> {
@@ -110,12 +121,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public Integer findAllPendingCount(UUID userId) {
-        LocalDate today = LocalDate.now();
+        ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
+        LocalDate today = LocalDate.now(zoneId);
         return (Integer) userConceptRepo.findPendingReviewsCount(userId, today);
     }
 
     // Inject this into your existing UserServiceImpl
-    private final ReviewHistoryRepo reviewHistoryRepo;
+
 
     @Override
     @Transactional
@@ -147,13 +159,13 @@ public class UserServiceImpl implements UserService {
             }
         }
 
-        userConcept.setCurrentIntervalDays(interval);
-        userConcept.setMasteryScore(mastery);
-        userConcept.setFailureCount(failures);
-        userConcept.setReviewCount(reviewCount + 1);
-        userConcept.setLastReviewedAt(LocalDateTime.now());
-        userConcept.setNextReviewDate(LocalDate.now().plusDays(interval));
-        userConcept.setUpdatedAt(LocalDateTime.now());
+        // Compute user's timezone
+        ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
+        // Use timezone-aware now for review timestamps
+        LocalDateTime nowTZ = LocalDateTime.now(zoneId);
+        userConcept.setLastReviewedAt(nowTZ);
+        userConcept.setNextReviewDate(LocalDate.now(zoneId).plusDays(interval));
+        userConcept.setUpdatedAt(nowTZ);
 
         userConceptRepo.save(userConcept);
 
@@ -162,7 +174,8 @@ public class UserServiceImpl implements UserService {
                 .userId(userId)
                 .conceptId(userConcept.getConceptId())
                 .quality(rating)
-                .reviewedAt(LocalDateTime.now())
+                .reviewedAt(nowTZ)
+                .createdAt(nowTZ)
                 .build();
         reviewHistoryRepo.save(log);
     }

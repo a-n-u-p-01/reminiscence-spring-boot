@@ -14,6 +14,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import com.anupam.reminiscence.repo.UserRepository;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -58,6 +59,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             new WebAuthenticationDetailsSource().buildDetails(request)
                     );
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
+
+                // Update timezone if header passed and differs
+                String timezoneHeader = request.getHeader("X-Timezone");
+                if (timezoneHeader != null && !timezoneHeader.isBlank() && !timezoneHeader.equals(userEntity.getTimezone())) {
+                    userEntity.setTimezone(timezoneHeader);
+                    userRepository.save(userEntity);
                 }
             }
         } catch (Exception e) {

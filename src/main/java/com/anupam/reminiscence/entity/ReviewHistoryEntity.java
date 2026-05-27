@@ -27,6 +27,12 @@ public class ReviewHistoryEntity {
     @Column(nullable = false)
     private Level quality;
 
+    @Column(name = "interval_days", nullable = false)
+    private Integer intervalDays;
+
     @Column(name = "reviewed_at", nullable = false)
     private LocalDateTime reviewedAt;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 }

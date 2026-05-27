@@ -15,11 +15,15 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
+
+import com.anupam.reminiscence.repo.UserRepository;
 
 @Service
 @RequiredArgsConstructor
@@ -31,9 +35,11 @@ public class ConceptProcessingService {
     private final UserConceptRepo userConceptRepo;
     private final DailyEntryItemRepo dailyEntryItemRepo;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
 
     private static final int TYPO_DISTANCE_THRESHOLD = 2;
     private final LevenshteinDistance levenshtein = new LevenshteinDistance();
+    private final EntryStatusService entryStatusService;
 
     @Transactional
     public void processEntry(DailyEntryItemEntity entry) {
@@ -46,7 +52,7 @@ public class ConceptProcessingService {
             );
 
             if (rawTopics == null || rawTopics.isEmpty()) {
-                markEntry(entry, ProcessStatus.SUCCESS,"Successfully Processed");
+                markEntry(entry, ProcessStatus.SUCCESS,"Extracted topic list is empty. Time: "+ LocalDateTime.now(ZoneId.of(userRepository.findById(entry.getUserId()).orElseThrow().getTimezone())));
                 return;
             }
 
@@ -144,7 +150,7 @@ public class ConceptProcessingService {
                 return;
             }
 
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(ZoneId.of(userRepository.findById(entry.getUserId()).orElseThrow().getTimezone()));
 
             List<ConceptEntity> generatedConcepts = response.getFlashcardList().stream()
                     .map(flashcard -> ConceptEntity.builder()
@@ -194,17 +200,13 @@ public class ConceptProcessingService {
         } catch (Exception e) {
             log.error("Failed to process entry {}: {}", entry.getUserId(), e.getMessage(), e);
 
-            markEntry(
-                    entry,
-                    ProcessStatus.FAILED,
-                    e.getClass().getSimpleName() + ": " + e.getMessage()
-            );
+            entryStatusService.markAsFailed(entry, e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
     // Creates UserConceptEntity only if one doesn't already exist for this user+concept
     private void createUserConceptsIfMissing(List<ConceptEntity> concepts, UUID userId) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone()));
 
         List<UserConceptEntity> toCreate = concepts.stream()
                 .filter(concept ->
@@ -215,7 +217,7 @@ public class ConceptProcessingService {
                         .conceptId(concept.getId())
                         .masteryScore(0)
                         .currentIntervalDays(1)
-                        .nextReviewDate(LocalDate.now().plusDays(1))
+                        .nextReviewDate(LocalDate.now(ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone())).plusDays(1))
                         .lastReviewedAt(null)
                         .reviewCount(0)
                         .failureCount(0)
@@ -229,7 +231,9 @@ public class ConceptProcessingService {
         }
     }
 
-    private void markEntry(DailyEntryItemEntity entry,
+
+    @Transactional(propagation = Propagation.NEVER)
+    public void markEntry(DailyEntryItemEntity entry,
                            ProcessStatus status,
                            String comment) {
 

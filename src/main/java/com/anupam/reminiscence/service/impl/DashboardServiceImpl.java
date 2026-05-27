@@ -2,8 +2,6 @@ package com.anupam.reminiscence.service.impl;
 
 import com.anupam.reminiscence.dto.DashboardDTOs.*;
 import com.anupam.reminiscence.entity.ConceptEntity;
-import com.anupam.reminiscence.entity.DailyEntryItemEntity;
-import com.anupam.reminiscence.entity.ReviewHistoryEntity;
 import com.anupam.reminiscence.entity.UserConceptEntity;
 import com.anupam.reminiscence.repo.*;
 import com.anupam.reminiscence.service.DashboardService;
@@ -14,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
+import com.anupam.reminiscence.repo.UserRepository;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -29,11 +29,13 @@ public class DashboardServiceImpl implements DashboardService {
     private final DailyEntryItemRepo dailyEntryItemRepo;
     private final ConceptRepo conceptRepo;
     private final ObjectMapper objectMapper;
+    private final UserRepository userRepository;
 
     @Override
     @Transactional(readOnly = true)
     public MetricsResponse getDashboardMetrics(UUID userId) {
-        LocalDate today = LocalDate.now();
+        ZoneId zoneId = ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone());
+        LocalDate today = LocalDate.now(zoneId);
         LocalDate tomorrow = today.plusDays(1);
         LocalDate nextWeekEnd = today.plusDays(7);
 
@@ -49,7 +51,8 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Integer> getMatrixHeatmap(UUID userId) {
-        LocalDateTime T365DaysAgo = LocalDate.now().minusDays(364).atStartOfDay();
+        ZoneId zoneId = ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone());
+        LocalDateTime T365DaysAgo = LocalDate.now(zoneId).minusDays(364).atStartOfDay();
 
         List<LocalDateTime> structuralReviews = reviewHistoryRepo.findAllReviewTimestampsSince(userId, T365DaysAgo);
         List<LocalDateTime> rawEntries = dailyEntryItemRepo.findAllEntryTimestampsSince(userId, T365DaysAgo);
@@ -119,7 +122,8 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     private int calculateActiveStreak(UUID userId) {
-        LocalDateTime thirtyDaysAgo = LocalDate.now().minusDays(30).atStartOfDay();
+        ZoneId zoneId = ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone());
+        LocalDateTime thirtyDaysAgo = LocalDate.now(zoneId).minusDays(30).atStartOfDay();
         Set<LocalDate> activeDates = new HashSet<>();
 
         reviewHistoryRepo.findAllReviewTimestampsSince(userId, thirtyDaysAgo)
@@ -128,7 +132,7 @@ public class DashboardServiceImpl implements DashboardService {
                 .forEach(dt -> activeDates.add(dt.toLocalDate()));
 
         int continuousStreak = 0;
-        LocalDate indexTracker = LocalDate.now();
+        LocalDate indexTracker = LocalDate.now(zoneId);
 
         // Check backwards to see how long the active streak has been active
         while (activeDates.contains(indexTracker)) {
@@ -138,7 +142,7 @@ public class DashboardServiceImpl implements DashboardService {
 
         // Check if user has missed today but maintained yesterday's momentum pass
         if (continuousStreak == 0) {
-            indexTracker = LocalDate.now().minusDays(1);
+            indexTracker = LocalDate.now(zoneId).minusDays(1);
             while (activeDates.contains(indexTracker)) {
                 continuousStreak++;
                 indexTracker = indexTracker.minusDays(1);

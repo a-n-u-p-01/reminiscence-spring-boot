@@ -174,6 +174,7 @@ public class UserServiceImpl implements UserService {
                 .userId(userId)
                 .conceptId(userConcept.getConceptId())
                 .quality(rating)
+                .intervalDays(interval)
                 .reviewedAt(nowTZ)
                 .createdAt(nowTZ)
                 .build();

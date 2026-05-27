@@ -22,16 +22,16 @@ public class DailyEntryItemEntity {
 
     private UUID userId;
 
-    @Column(name = "raw_topic", nullable = false)
+    @Column(name = "raw_topic", nullable = false, columnDefinition = "TEXT")
     private String rawTopic;
 
-    @Column(name = "processing_status", nullable = false)
+    @Column(name = "processing_status", nullable = false, length = 10)
     private String processingStatus;
 
-    @Column(name = "process_comment")
+    @Column(name = "process_comment", columnDefinition = "TEXT")
     private String processComment;
 
-    @Column(name = "topic_extracted")
+    @Column(name = "topic_extracted", columnDefinition = "TEXT")
     private String topicExtracted;
 
     @Column(name = "created_at", nullable = false)

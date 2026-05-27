@@ -5,6 +5,7 @@ import com.anupam.reminiscence.dto.DailyEntryRequest;
 import com.anupam.reminiscence.dto.ReviewRequest;
 import com.anupam.reminiscence.entity.UserEntity;
 import com.anupam.reminiscence.service.UserService;
+import com.anupam.reminiscence.service.impl.DailyEntryProcessingScheduler;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class UserController {
         List<ConceptReviewResponse> pendingList = userService.findAllPending(user.getId());
         return ResponseEntity.ok(pendingList); // 200 status with flattened object payload lists
     }
+
     /**
      * Fetches all flashcard cards due for memory reviews today
      */
@@ -61,4 +63,7 @@ public class UserController {
         userService.reviewConcept(user.getId(), userConceptId, request.getRating());
         return ResponseEntity.ok().build();
     }
+
+
+
 }

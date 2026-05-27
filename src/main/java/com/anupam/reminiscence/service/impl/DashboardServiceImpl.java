@@ -2,8 +2,6 @@ package com.anupam.reminiscence.service.impl;
 
 import com.anupam.reminiscence.dto.DashboardDTOs.*;
 import com.anupam.reminiscence.entity.ConceptEntity;
-import com.anupam.reminiscence.entity.DailyEntryItemEntity;
-import com.anupam.reminiscence.entity.ReviewHistoryEntity;
 import com.anupam.reminiscence.entity.UserConceptEntity;
 import com.anupam.reminiscence.repo.*;
 import com.anupam.reminiscence.service.DashboardService;

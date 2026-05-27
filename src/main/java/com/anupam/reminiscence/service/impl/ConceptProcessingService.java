@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -34,6 +35,7 @@ public class ConceptProcessingService {
 
     private static final int TYPO_DISTANCE_THRESHOLD = 2;
     private final LevenshteinDistance levenshtein = new LevenshteinDistance();
+    private final EntryStatusService entryStatusService;
 
     @Transactional
     public void processEntry(DailyEntryItemEntity entry) {
@@ -46,7 +48,7 @@ public class ConceptProcessingService {
             );
 
             if (rawTopics == null || rawTopics.isEmpty()) {
-                markEntry(entry, ProcessStatus.SUCCESS,"Successfully Processed");
+                markEntry(entry, ProcessStatus.SUCCESS,"Extracted topic list is empty. Time: "+ LocalDateTime.now());
                 return;
             }
 
@@ -194,11 +196,7 @@ public class ConceptProcessingService {
         } catch (Exception e) {
             log.error("Failed to process entry {}: {}", entry.getUserId(), e.getMessage(), e);
 
-            markEntry(
-                    entry,
-                    ProcessStatus.FAILED,
-                    e.getClass().getSimpleName() + ": " + e.getMessage()
-            );
+            entryStatusService.markAsFailed(entry, e.getClass().getSimpleName() + ": " + e.getMessage());
         }
     }
 
@@ -229,7 +227,9 @@ public class ConceptProcessingService {
         }
     }
 
-    private void markEntry(DailyEntryItemEntity entry,
+
+    @Transactional(propagation = Propagation.NEVER)
+    public void markEntry(DailyEntryItemEntity entry,
                            ProcessStatus status,
                            String comment) {
 

@@ -20,7 +20,11 @@ public class CorsConfig {
     /** Allowed origins for dev and production */
     private static final List<String> ALLOWED_ORIGINS = List.of(
             "http://localhost:5173",
-            "https://reminiscence-react.vercel.app"
+            "https://reminiscence-react.vercel.app",
+            "https://localhost",
+            "http://localhost",
+            "capacitor://localhost",
+            "ionic://localhost"
     );
 
     /** Core CORS rules used by Spring‑Security */

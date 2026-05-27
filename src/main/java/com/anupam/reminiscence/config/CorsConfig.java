@@ -17,19 +17,26 @@ import java.util.List;
 @Configuration
 public class CorsConfig {
 
-    private static final String ALLOWED_ORIGIN = "http://localhost:5173";
+    /** Allowed origins for dev and production */
+    private static final List<String> ALLOWED_ORIGINS = List.of(
+            "http://localhost:5173",
+            "https://reminiscence-react.vercel.app"
+    );
 
-    /** Core CORS rules used by the filter (if you ever need it) and by Spring‑Security */
+    /** Core CORS rules used by Spring‑Security */
     @Bean
     public CorsConfiguration corsConfiguration() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(List.of(ALLOWED_ORIGIN));                // ✅ dev front‑end
+        // exact allowed origins
+        // also accept as patterns (covers exact matches)
+        cfg.setAllowedOrigins(ALLOWED_ORIGINS);
+        cfg.setAllowedOriginPatterns(ALLOWED_ORIGINS);
         cfg.setAllowedMethods(List.of(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        cfg.setAllowedHeaders(List.of("*"));                           // ✅ any custom header (X‑Timezone, Authorization, …)
+        cfg.setAllowedHeaders(List.of("*"));
         cfg.setExposedHeaders(List.of(
                 "X-Timezone", "Authorization", "Content-Disposition"));
-        cfg.setAllowCredentials(true);                                 // required for JWT header
+        cfg.setAllowCredentials(true);
         cfg.setMaxAge(3600L);
         return cfg;
     }

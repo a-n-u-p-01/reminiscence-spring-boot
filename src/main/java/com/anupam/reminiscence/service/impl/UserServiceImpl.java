@@ -169,6 +169,7 @@ public class UserServiceImpl implements UserService {
         userConcept.setCurrentIntervalDays(interval);
         userConcept.setMasteryScore(mastery);
         userConcept.setFailureCount(failures);
+        userConcept.setReviewCount(reviewCount+1);
         userConcept.setUpdatedAt(nowTZ);
 
         userConceptRepo.save(userConcept);

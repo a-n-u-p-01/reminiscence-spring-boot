@@ -24,6 +24,7 @@ public class CorsConfig {
             "https://localhost",
             "http://localhost",
             "https://anupam.com",
+            "https://reminiscence.com",
             "capacitor://localhost",
             "ionic://localhost"
     );

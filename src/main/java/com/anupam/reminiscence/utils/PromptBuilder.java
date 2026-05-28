@@ -8,51 +8,82 @@ public class PromptBuilder {
 
     public static String buildTopicExtractionPrompt(String text) {
         return """
-        You are a concept extraction engine for a developer learning app.
+You are an educational concept extraction engine for a spaced repetition and revision system.
 
-        A user has written a note describing what they studied.
+A user submits free-form study notes.
 
-        Your task:
-        Extract the distinct learning concepts from the note.
+Your task:
+Extract ONLY meaningful study concepts suitable for future revision.
 
-        Rules:
+A valid concept must:
+- represent a meaningful learnable unit
+- have clear educational or semantic value
+- be specific enough for revision
+- preserve the user’s intended meaning
 
-        1. Preserve the user's intended meaning exactly.
+Extraction principles:
 
-        2. Extract concepts that are meaningful units for revision.
-           Each extracted item should be something that can reasonably become a flashcard.
+1. Extract only concepts that represent actual knowledge, skills, technologies, theories, topics, frameworks, systems, methodologies, or educational subjects.
 
-        3. Keep semantically different concepts separate, even if they are closely related.
+2. Ignore meaningless text, corrupted text, keyboard spam, random fragments, repeated characters, low-signal phrases, filler words, and incomplete thoughts.
 
-        4. Merge duplicates, aliases, and alternate phrasings when they represent the exact same concept.
+3. Ignore generic operational words unless they clearly represent a study concept in context.
 
-        5. Expand well-known abbreviations only when the expansion preserves exact meaning.
+4. Ignore concepts with weak semantic confidence.
 
-        6. Correct obvious spelling mistakes silently without changing intended meaning.
+5. Do not infer concepts that are not explicitly present or strongly implied.
 
-        7. Do not over-fragment concepts into tiny implementation details.
+6. Preserve semantic intent exactly.
 
-        8. Do not make concepts broader or narrower than what the user intended.
+7. Merge duplicate concepts and alternate phrasings when they refer to the same underlying concept.
 
-        9. Do not invent concepts not explicitly mentioned or clearly implied.
+8. Correct obvious spelling mistakes silently while preserving meaning.
 
-        10. Return between 1 and 20 concepts.
+9. Keep concepts concise, revision-friendly, and human-readable.
 
-        User note:
-        "%s"
+10. Do not over-fragment concepts into tiny implementation details.
 
-        Return ONLY valid JSON:
+11. Do not broaden or narrow the scope of the concept beyond the user's intent.
 
-        {
-          "topics": ["topic1", "topic2"]
-        }
+12. Expand abbreviations only when the meaning is unambiguous and universally understood.
 
-        Strict requirements:
-        - JSON only
-        - No markdown
-        - No explanation
-        - No extra text
-        """.formatted(text);
+13. Return an empty array when no meaningful study concepts exist.
+
+14. The output should prioritize quality over quantity.
+
+15. A concept should be stable enough that a user could meaningfully revise it later as an independent learning item.
+
+16. Preserve concepts in their natural canonical form without adding generated qualifiers, classifications, interpretations, or explanatory suffixes.
+
+17. Avoid transforming concepts into descriptive phrases when the original concise concept form is sufficient.
+
+18. Prefer stable standalone revision topics over contextual or explanatory rewrites.
+
+19. When a concept is ambiguous, preserve the original term instead of generating interpretive expansions.
+
+20. Do not inject semantic categorization into the output.
+
+21. The output should contain only the clean concept itself, not metadata about the concept.
+
+22. Favor concise domain-recognizable terminology over explanatory language.
+
+User note:
+"%s"
+
+Return ONLY valid JSON:
+
+{
+  "topics": ["topic1", "topic2"]
+}
+
+Strict requirements:
+- JSON only
+- No markdown
+- No explanation
+- No extra text
+""".formatted(text);
+
+
     }
     // AI Call 1 — semantic dedup only
     public static String buildDeduplicationPrompt(

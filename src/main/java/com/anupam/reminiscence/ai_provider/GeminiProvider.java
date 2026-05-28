@@ -15,7 +15,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service
-@Order(2)
+@Order(1)
 @RequiredArgsConstructor
 public class GeminiProvider implements AIProvider {
 
@@ -64,7 +64,7 @@ public class GeminiProvider implements AIProvider {
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(
-                        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+                        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent"
                 ))
                 .header("x-goog-api-key", apiKey)
                 .header("Content-Type", "application/json")

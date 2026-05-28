@@ -23,6 +23,7 @@ public class CorsConfig {
             "https://reminiscence-react.vercel.app",
             "https://localhost",
             "http://localhost",
+            "https://anupam.com",
             "capacitor://localhost",
             "ionic://localhost"
     );

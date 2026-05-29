@@ -32,4 +32,8 @@ public class AuthController {
         dailyEntryProcessingScheduler.processPendingEntries();
         return ResponseEntity.ok("Success");
     }
+    @GetMapping("/health-check")
+    public ResponseEntity<String> healthCheck() {
+        return ResponseEntity.ok("Success");
+    }
 }

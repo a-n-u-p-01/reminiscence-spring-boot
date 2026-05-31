@@ -1,58 +1,101 @@
 package com.anupam.reminiscence.service.impl;
 
 import com.anupam.reminiscence.service.EmailService;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+@Service
+@RequiredArgsConstructor
+public class EmailServiceImpl implements EmailService {
 
-    @Service
-    @RequiredArgsConstructor
-    public class EmailServiceImpl implements EmailService {
+    private final JavaMailSender mailSender;
 
-        @Value("${resend.api.key}")
-        private String apiKey;
+    @Value("${spring.mail.username}")
+    private String fromEmail;
 
-        private final RestTemplate restTemplate;
+    @Override
+    public void sendOtpEmail(String toEmail, String otp) {
 
-        @Override
-        public void sendOtpEmail(String toEmail, String otp) {
+        try {
 
-            String url = "https://api.resend.com/emails";
+            MimeMessage message = mailSender.createMimeMessage();
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setBearerAuth(apiKey);
-            headers.setContentType(MediaType.APPLICATION_JSON);
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(message, true, "UTF-8");
 
-            Map<String, Object> body = new HashMap<>();
-            body.put("from", "reminiscence@resend.dev");
-            body.put("to", List.of(toEmail));
-            body.put("subject", "Verify Your Email");
-
-            body.put(
-                    "html",
-                    "<h2>Email Verification for reminiscence </h2>" +
-                            "<p>Your OTP is:</p>" +
-                            "<h1>" + otp + "</h1>" +
-                            "<p>Valid for 10 minutes.</p>"
+            helper.setFrom(
+                    fromEmail,
+                    "Reminiscence"
             );
 
-            HttpEntity<Map<String, Object>> request =
-                    new HttpEntity<>(body, headers);
+            helper.setTo(toEmail);
 
-            restTemplate.postForEntity(
-                    url,
-                    request,
-                    String.class
+            helper.setSubject("Verify Your Email - Reminiscence");
+
+            helper.setText(
+                    """
+                    <!DOCTYPE html>
+                    <html>
+                    <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+                    
+                        <div style="max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 12px;">
+                            
+                            <h2 style="margin-bottom: 20px;">
+                                Verify Your Email
+                            </h2>
+
+                            <p>Hello,</p>
+
+                            <p>
+                                Thank you for signing up for Reminiscence.
+                                Use the OTP below to verify your email address.
+                            </p>
+
+                            <div style="text-align: center; margin: 30px 0;">
+                                <span style="
+                                    font-size: 32px;
+                                    font-weight: bold;
+                                    letter-spacing: 6px;
+                                    padding: 12px 24px;
+                                    border-radius: 8px;
+                                    background: #f5f5f5;
+                                    display: inline-block;">
+                                    %s
+                                </span>
+                            </div>
+
+                            <p>
+                                This OTP will expire in <strong>10 minutes</strong>.
+                            </p>
+
+                            <p>
+                                If you did not request this verification,
+                                you can safely ignore this email.
+                            </p>
+
+                            <br>
+
+                            <p>
+                                Regards,<br>
+                                <strong>Reminiscence Team</strong>
+                            </p>
+
+                        </div>
+
+                    </body>
+                    </html>
+                    """.formatted(otp),
+                    true
             );
+
+            mailSender.send(message);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to send OTP email", e);
         }
     }
+}

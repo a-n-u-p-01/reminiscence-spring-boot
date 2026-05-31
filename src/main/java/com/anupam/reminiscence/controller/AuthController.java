@@ -18,8 +18,9 @@ public class AuthController {
 
 
     @PostMapping("/register")
-    public AuthResponse register(@RequestBody RegisterRequest request) {
-        return authService.register(request);
+    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
+        authService.register(request);
+        return ResponseEntity.ok("Otp sent to you email please verify");
     }
 
     @PostMapping("/login")
@@ -36,4 +37,12 @@ public class AuthController {
     public ResponseEntity<String> healthCheck() {
         return ResponseEntity.ok("Success");
     }
+
+
+    @PostMapping("/verify-otp")
+    public ResponseEntity<AuthResponse> verifyOtp(@RequestBody LoginRequest loginRequest){
+
+        return ResponseEntity.ok(authService.verifyOtp(loginRequest));
+    }
+
 }

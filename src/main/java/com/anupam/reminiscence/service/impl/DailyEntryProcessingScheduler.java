@@ -1,6 +1,7 @@
 package com.anupam.reminiscence.service.impl;
 
 import com.anupam.reminiscence.constants.ProcessStatus;
+import com.anupam.reminiscence.dto.auth.LoginRequest;
 import com.anupam.reminiscence.entity.DailyEntryItemEntity;
 import com.anupam.reminiscence.repo.DailyEntryItemRepo;
 import com.anupam.reminiscence.service.impl.ConceptProcessingService;
@@ -50,4 +51,5 @@ public class DailyEntryProcessingScheduler {
 
         log.info("Daily entry processing job completed.");
     }
+
 }

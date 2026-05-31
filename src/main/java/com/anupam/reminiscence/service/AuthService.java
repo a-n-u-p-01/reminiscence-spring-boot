@@ -7,7 +7,10 @@ import com.anupam.reminiscence.dto.auth.RegisterRequest;
 
 public interface AuthService {
 
-    AuthResponse register(RegisterRequest request);
+    void register(RegisterRequest request);
 
     AuthResponse login(LoginRequest request);
+
+
+    AuthResponse verifyOtp(LoginRequest loginRequest);
 }

@@ -26,6 +26,9 @@ public class UserEntity {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column(nullable = false)
+    private Boolean isEmailVerified;
+
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 

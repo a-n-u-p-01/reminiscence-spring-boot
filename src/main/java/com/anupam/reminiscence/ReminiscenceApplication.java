@@ -7,6 +7,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @SpringBootApplication
 @EnableScheduling
+@EnableAsync
 public class ReminiscenceApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(ReminiscenceApplication.class, args);

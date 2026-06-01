@@ -1,3 +1,8 @@
+# fly.toml app configuration file generated for reminiscence-spring-boot on 2026-06-01T09:02:20Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
 app = "reminiscence-spring-boot"
 primary_region = "bom"
 
@@ -8,12 +13,20 @@ primary_region = "bom"
   force_https = true
 
   auto_start_machines = true
-  auto_stop_machines = "off"
+  auto_stop_machines = false
   min_machines_running = 1
 
-  processes = ["app"]
+  processes = ['app']
 
 [[vm]]
-  cpu_kind = "shared"
+  cpu_kind = 'shared'
   cpus = 1
-  memory = "1gb"
+  memory = '1gb'
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory = '256mb'
+  memory_mb = 256
+  processes = ['app']
+  size = 'shared-cpu-1x'

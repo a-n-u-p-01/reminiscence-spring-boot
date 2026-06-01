@@ -13,7 +13,7 @@ You are an educational concept extraction engine for a spaced repetition and rev
 A user submits free-form study notes.
 
 Your task:
-Extract ONLY meaningful study concepts suitable for future revision. Take this task strictly.
+Extract ONLY meaningful study concepts suitable for future revision. 
 
 A valid concept must:
 - represent a meaningful learnable unit
@@ -34,13 +34,17 @@ Extraction principles:
 
 6. Merge duplicates, equivalent variations, and obvious spelling mistakes.
 
-7. Prefer stable standalone concepts that can be meaningfully reviewed as independent flashcards.
+7. Treat granular technical mechanisms, protocols, and sub-components (e.g., "refresh tokens") as valid, standalone concepts.
 
-8. Avoid unnecessary fragmentation, descriptive rewrites, classifications, metadata, or explanatory phrases.
+8. DO NOT subsume or group specific terms under broader parent categories. If a user lists both a parent system (e.g., "JWT authentication") and a specific component (e.g., "refresh tokens"), you must extract BOTH.
 
-9. When a concept is ambiguous, preserve the original term rather than interpreting it.
+9. Avoid descriptive rewrites, classifications, metadata, or explanatory phrases.
 
-10. Prioritize precision and quality over quantity; return an empty list if no meaningful study concepts exist.
+10. When a concept is ambiguous, preserve the original term rather than interpreting it.
+
+11. Prioritize precision and quality over quantity; return an empty list if no meaningful study concepts exist.
+
+12. Take this task strictly and do not miss ANY distinct technical concepts that the user explicitly mentioned.
 
 User note:
 "%s"
@@ -53,12 +57,10 @@ Return ONLY valid JSON:
 
 Strict requirements:
 - JSON only
-- No markdown
+- No markdown formatting (no ```json blocks)
 - No explanation
 - No extra text
 """.formatted(text);
-
-
     }
     // AI Call 1 — semantic dedup only
     public static String buildDeduplicationPrompt(

@@ -1,24 +1,28 @@
 package com.anupam.reminiscence.service.impl;
 
 import com.anupam.reminiscence.service.EmailService;
-import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class EmailServiceImpl implements EmailService {
 
-    private final JavaMailSender mailSender;
+    private final RestTemplate restTemplate;
 
-    @Value("${spring.mail.username}")
-    private String fromEmail;
+    @Value("${brevo.api.key}")
+    private String apiKey;
 
     @Override
     @Async
@@ -28,21 +32,20 @@ public class EmailServiceImpl implements EmailService {
 
         try {
 
-            MimeMessage message = mailSender.createMimeMessage();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("api-key", apiKey);
 
-            MimeMessageHelper helper =
-                    new MimeMessageHelper(message, true, "UTF-8");
-
-            helper.setFrom(
-                    fromEmail,
-                    "Reminiscence"
-            );
-
-            helper.setTo(toEmail);
-
-            helper.setSubject("Verify Your Email - Reminiscence");
-
-            helper.setText(
+            Map<String, Object> body = Map.of(
+                    "sender", Map.of(
+                            "name", "Reminiscence",
+                            "email", "anutarai.2001@gmail.com"
+                    ),
+                    "to", List.of(
+                            Map.of("email", toEmail)
+                    ),
+                    "subject", "Verify Your Email - Reminiscence",
+                    "htmlContent",
                     """
                     <!DOCTYPE html>
                     <html>
@@ -53,13 +56,19 @@ public class EmailServiceImpl implements EmailService {
                         <p>Valid for 10 minutes.</p>
                     </body>
                     </html>
-                    """.formatted(otp),
-                    true
+                    """.formatted(otp)
             );
+
+            HttpEntity<Map<String, Object>> request =
+                    new HttpEntity<>(body, headers);
 
             log.info("Sending OTP email to {}", toEmail);
 
-            mailSender.send(message);
+            restTemplate.postForEntity(
+                    "https://api.brevo.com/v3/smtp/email",
+                    request,
+                    String.class
+            );
 
             long endTime = System.currentTimeMillis();
 

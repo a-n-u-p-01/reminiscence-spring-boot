@@ -3,6 +3,7 @@ package com.anupam.reminiscence.controller;
 import com.anupam.reminiscence.dto.ConceptReviewResponse;
 import com.anupam.reminiscence.dto.DailyEntryRequest;
 import com.anupam.reminiscence.dto.ReviewRequest;
+import com.anupam.reminiscence.dto.UpdateTopicsRequest;
 import com.anupam.reminiscence.entity.UserEntity;
 import com.anupam.reminiscence.service.UserService;
 import com.anupam.reminiscence.service.impl.DailyEntryProcessingScheduler;
@@ -32,6 +33,21 @@ public class UserController {
         return ResponseEntity.accepted().build(); // 202 — saved, processing in background
     }
 
+    @PostMapping("/save/extracted-topic")
+    public ResponseEntity<Void> saveUpdatedExtractedTopic(
+            @RequestBody UpdateTopicsRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
+    ) {
+        if (request == null || request.getTopics() == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        userService.updateTopics(request.getTopics(), user.getId());
+
+        // Returns 204 No Content to signify that processing was successfully completed,
+        // whether an update occurred or was skipped by the today-only business logic rule.
+        return ResponseEntity.noContent().build();
+    }
     /**
      * Fetches all flashcard cards due for memory reviews today
      */

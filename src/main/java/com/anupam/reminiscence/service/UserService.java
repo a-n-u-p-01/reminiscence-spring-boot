@@ -14,4 +14,6 @@ public interface UserService {
     Integer findAllPendingCount(UUID id);
 
     void reviewConcept(UUID userId, UUID userConceptId, Level rating);
+
+    void updateTopics(List<String> topics, UUID id);
 }

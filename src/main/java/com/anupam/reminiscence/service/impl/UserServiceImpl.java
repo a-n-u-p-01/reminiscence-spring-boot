@@ -185,6 +185,48 @@ public class UserServiceImpl implements UserService {
                 .build();
         reviewHistoryRepo.save(log);
     }
+
+    @Override
+    @Transactional
+    public void updateTopics(List<String> topics, UUID userId) {
+        try {
+            if (topics == null) {
+                throw new IllegalArgumentException("Topics configuration cannot be null");
+            }
+
+            // 1. Resolve localized chronologies to lock onto today
+            ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
+            LocalDate today = LocalDate.now(zoneId);
+            LocalDateTime now = LocalDateTime.now(zoneId);
+            LocalDateTime startOfDayDt = today.atStartOfDay();
+            LocalDateTime endOfDayDt = today.plusDays(1).atStartOfDay();
+
+            // 2. Locate today's entry. If not present, do nothing.
+            java.util.Optional<DailyEntryItemEntity> existingEntryOpt =
+                    dailyEntryItemRepo.findTodayEntryByUserId(userId, startOfDayDt, endOfDayDt);
+
+            if (existingEntryOpt.isEmpty()) {
+                // STOPS EXECUTION: If no daily entry exists for today, do nothing.
+                return;
+            }
+
+            DailyEntryItemEntity entry = existingEntryOpt.get();
+
+            // 3. Update existing properties and serialize topics
+            entry.setProcessingStatus(ProcessStatus.PENDING.name());
+            entry.setUpdatedAt(now);
+
+            String jsonPayload = objectMapper.writeValueAsString(topics);
+            entry.setTopicExtracted(jsonPayload);
+
+            // 4. Save updates back to persistence layers
+            dailyEntryItemRepo.save(entry);
+
+        } catch (IllegalArgumentException | JsonProcessingException e) {
+            throw new RuntimeException("Failed to update extracted topics configuration matrix", e);
+        }
+    }
+
     private double calculateEaseFactor(int mastery, int failures) {
         double ease = 1.8;
 

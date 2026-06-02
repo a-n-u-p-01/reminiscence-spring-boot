@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
+import java.time.Instant;
 import java.util.Date;
 
 @Service
@@ -24,12 +25,13 @@ public class JwtServiceImpl implements JwtService {
 
     @Override
     public String generateToken(UserEntity user) {
+        Instant now = Instant.now();
         return Jwts.builder()
                 .setSubject(user.getEmail())
                 .claim("userId", user.getId().toString())
                 .claim("fullName", user.getFullName())
-                .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + jwtExpiration))
+                .setIssuedAt(Date.from(now))
+                .setExpiration(Date.from(now.plusMillis(jwtExpiration)))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -42,14 +44,12 @@ public class JwtServiceImpl implements JwtService {
     @Override
     public boolean isTokenValid(String token, UserEntity user) {
         String email = extractEmail(token);
-
         return email.equals(user.getEmail()) && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
-        return extractAllClaims(token)
-                .getExpiration()
-                .before(new Date());
+        Date expiration = extractAllClaims(token).getExpiration();
+        return expiration != null && expiration.toInstant().isBefore(Instant.now());
     }
 
     private Claims extractAllClaims(String token) {

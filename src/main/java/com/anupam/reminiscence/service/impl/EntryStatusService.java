@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +21,7 @@ public class EntryStatusService {
     public void markAsFailed(DailyEntryItemEntity entry, String comment) {
         entry.setProcessingStatus(ProcessStatus.FAILED.name());
         entry.setProcessComment(comment);
-        entry.setUpdatedAt(LocalDateTime.now());
+        entry.setUpdatedAt(Instant.now());
 
         dailyEntryItemRepo.save(entry);
     }

@@ -11,6 +11,8 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -28,7 +30,7 @@ public class EmailServiceImpl implements EmailService {
     @Async
     public void sendOtpEmail(String toEmail, String otp) {
 
-        long startTime = System.currentTimeMillis();
+        Instant startTime = Instant.now();
 
         try {
 
@@ -70,22 +72,22 @@ public class EmailServiceImpl implements EmailService {
                     String.class
             );
 
-            long endTime = System.currentTimeMillis();
+            Instant endTime = Instant.now();
 
             log.info(
                     "OTP email sent successfully to {} in {} ms",
                     toEmail,
-                    (endTime - startTime)
+                    Duration.between(startTime, endTime).toMillis()
             );
 
         } catch (Exception e) {
 
-            long endTime = System.currentTimeMillis();
+            Instant endTime = Instant.now();
 
             log.error(
                     "Failed to send OTP email to {} after {} ms",
                     toEmail,
-                    (endTime - startTime),
+                    Duration.between(startTime, endTime).toMillis(),
                     e
             );
 

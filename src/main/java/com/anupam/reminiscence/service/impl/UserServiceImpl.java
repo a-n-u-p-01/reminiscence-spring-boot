@@ -13,6 +13,9 @@ import com.anupam.reminiscence.repo.DailyEntryItemRepo;
 import com.anupam.reminiscence.repo.ReviewHistoryRepo;
 import com.anupam.reminiscence.repo.UserConceptRepo;
 import com.anupam.reminiscence.entity.UserEntity;
+
+import java.time.Duration;
+import java.time.Instant;
 import java.time.ZoneId;
 import com.anupam.reminiscence.repo.UserRepository;
 import com.anupam.reminiscence.service.UserService;
@@ -23,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -36,11 +38,10 @@ public class UserServiceImpl implements UserService {
 
     private final DailyEntryItemRepo dailyEntryItemRepo;
     private final ConceptRepo conceptRepo;
-    private final ConceptProcessingService conceptProcessingService;
     private final AIOrchestratorService aiOrchestratorService;
     private final ObjectMapper objectMapper;
-    private final UserConceptRepo userConceptRepo;
     private final UserRepository userRepository;
+    private final UserConceptRepo userConceptRepo;
     private final ReviewHistoryRepo reviewHistoryRepo;
 
     @Override
@@ -53,12 +54,10 @@ public class UserServiceImpl implements UserService {
 
             // Fetch user's timezone
             ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
-            LocalDate today = LocalDate.now(zoneId);
-            LocalDate tomorrow = today.plusDays(1);
-            LocalDate nextWeekEnd = today.plusDays(7);
-            LocalDateTime now = LocalDateTime.now(zoneId);
-            LocalDateTime startOfDayDt = today.atStartOfDay();
-            LocalDateTime endOfDayDt = tomorrow.atStartOfDay();
+            Instant now = Instant.now();
+            LocalDate today = LocalDate.ofInstant(now, zoneId);
+            Instant startOfDayDt = today.atStartOfDay(zoneId).toInstant();
+            Instant endOfDayDt = today.plusDays(1).atStartOfDay(zoneId).toInstant();
 
             // Check if an entry already exists for today
             DailyEntryItemEntity entry = dailyEntryItemRepo
@@ -126,66 +125,6 @@ public class UserServiceImpl implements UserService {
         return (Integer) userConceptRepo.findPendingReviewsCount(userId, today);
     }
 
-    // Inject this into your existing UserServiceImpl
-
-
-    @Override
-    @Transactional
-    public void reviewConcept(UUID userId, UUID userConceptId, Level rating) {
-        UserConceptEntity userConcept = userConceptRepo
-                .findByIdAndUserId(userConceptId, userId)
-                .orElseThrow(() -> new RuntimeException("Review card not found"));
-
-        int interval = userConcept.getCurrentIntervalDays();
-        int mastery = userConcept.getMasteryScore();
-        int failures = userConcept.getFailureCount();
-        int reviewCount = userConcept.getReviewCount();
-
-        double easeFactor = calculateEaseFactor(mastery, failures);
-
-        switch (rating) {
-            case EASY -> {
-                interval = reviewCount == 0 ? 3 : Math.max(interval + 1, (int) Math.round(interval * easeFactor * 1.3));
-                mastery = Math.min(100, mastery + 12);
-            }
-            case MEDIUM -> {
-                interval = reviewCount == 0 ? 1 : Math.max(interval + 1, (int) Math.round(interval * easeFactor));
-                mastery = Math.min(100, mastery + 5);
-            }
-            case HARD -> {
-                interval = 1;
-                mastery = Math.max(0, mastery - 8);
-                failures++;
-            }
-        }
-
-        // Compute user's timezone
-        ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
-        // Use timezone-aware now for review timestamps
-        LocalDateTime nowTZ = LocalDateTime.now(zoneId);
-        userConcept.setLastReviewedAt(nowTZ);
-        userConcept.setNextReviewDate(LocalDate.now(zoneId).plusDays(interval));
-        userConcept.setLastReviewedAt(nowTZ);
-        userConcept.setCurrentIntervalDays(interval);
-        userConcept.setMasteryScore(mastery);
-        userConcept.setFailureCount(failures);
-        userConcept.setReviewCount(reviewCount+1);
-        userConcept.setUpdatedAt(nowTZ);
-
-        userConceptRepo.save(userConcept);
-
-        // ================== CRUCIAL PERSISTENCE INSERTION FOR HEATMAP ENGINE ==================
-        ReviewHistoryEntity log = ReviewHistoryEntity.builder()
-                .userId(userId)
-                .conceptId(userConcept.getConceptId())
-                .quality(rating)
-                .intervalDays(interval)
-                .reviewedAt(nowTZ)
-                .createdAt(nowTZ)
-                .build();
-        reviewHistoryRepo.save(log);
-    }
-
     @Override
     @Transactional
     public void updateTopics(List<String> topics, UUID userId) {
@@ -196,10 +135,10 @@ public class UserServiceImpl implements UserService {
 
             // 1. Resolve localized chronologies to lock onto today
             ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
-            LocalDate today = LocalDate.now(zoneId);
-            LocalDateTime now = LocalDateTime.now(zoneId);
-            LocalDateTime startOfDayDt = today.atStartOfDay();
-            LocalDateTime endOfDayDt = today.plusDays(1).atStartOfDay();
+            Instant now = Instant.now();
+            LocalDate today = LocalDate.ofInstant(now, zoneId);
+            Instant startOfDayDt = today.atStartOfDay(zoneId).toInstant();
+            Instant endOfDayDt = today.plusDays(1).atStartOfDay(zoneId).toInstant();
 
             // 2. Locate today's entry. If not present, do nothing.
             java.util.Optional<DailyEntryItemEntity> existingEntryOpt =
@@ -225,15 +164,5 @@ public class UserServiceImpl implements UserService {
         } catch (IllegalArgumentException | JsonProcessingException e) {
             throw new RuntimeException("Failed to update extracted topics configuration matrix", e);
         }
-    }
-
-    private double calculateEaseFactor(int mastery, int failures) {
-        double ease = 1.8;
-
-        ease += (mastery / 100.0) * 0.8;
-
-        ease -= failures * 0.15;
-
-        return Math.max(1.3, Math.min(2.8, ease));
     }
 }

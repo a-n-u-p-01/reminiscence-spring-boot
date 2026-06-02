@@ -18,8 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
 
@@ -52,7 +52,7 @@ public class ConceptProcessingService {
             );
 
             if (rawTopics == null || rawTopics.isEmpty()) {
-                markEntry(entry, ProcessStatus.SUCCESS,"Extracted topic list is empty. Time: "+ LocalDateTime.now(ZoneId.of(userRepository.findById(entry.getUserId()).orElseThrow().getTimezone())));
+                markEntry(entry, ProcessStatus.SUCCESS, "Extracted topic list is empty. Time: " + Instant.now());
                 return;
             }
 
@@ -72,7 +72,7 @@ public class ConceptProcessingService {
             if (!exactMatches.isEmpty()) {
                 List<ConceptEntity> alreadyExistingConcepts =
                         conceptRepository.findByNormalizedNameIn(new ArrayList<>(exactMatches));
-                createUserConceptsIfMissing(alreadyExistingConcepts, entry.getUserId(),entry);
+                createUserConceptsIfMissing(alreadyExistingConcepts, entry.getUserId(), entry);
             }
 
             List<String> afterExactFilter = new ArrayList<>();
@@ -87,7 +87,7 @@ public class ConceptProcessingService {
             }
 
             if (afterExactFilter.isEmpty()) {
-                markEntry(entry, ProcessStatus.SUCCESS,"Successfully Processed");
+                markEntry(entry, ProcessStatus.SUCCESS, "Successfully Processed");
                 return;
             }
 
@@ -120,14 +120,14 @@ public class ConceptProcessingService {
                             .ifPresent(matchedCandidate -> {
                                 conceptRepository.findByNormalizedName(matchedCandidate)
                                         .ifPresent(concept ->
-                                                createUserConceptsIfMissing(List.of(concept), entry.getUserId(),entry)
+                                                createUserConceptsIfMissing(List.of(concept), entry.getUserId(), entry)
                                         );
                             });
                 }
             }
 
             if (afterTypoFilter.isEmpty()) {
-                markEntry(entry, ProcessStatus.SUCCESS,"Successfully Processed");
+                markEntry(entry, ProcessStatus.SUCCESS, "Successfully Processed");
                 return;
             }
 
@@ -137,7 +137,7 @@ public class ConceptProcessingService {
                     .getNewTopics();
 
             if (confirmedNewTopics == null || confirmedNewTopics.isEmpty()) {
-                markEntry(entry, ProcessStatus.SUCCESS,"Successfully Processed");
+                markEntry(entry, ProcessStatus.SUCCESS, "Successfully Processed");
                 return;
             }
 
@@ -146,11 +146,11 @@ public class ConceptProcessingService {
                     aiOrchestratorService.generateFlashcards(confirmedNewTopics);
 
             if (response.getFlashcardList() == null || response.getFlashcardList().isEmpty()) {
-                markEntry(entry, ProcessStatus.SUCCESS,"Successfully Processed");
+                markEntry(entry, ProcessStatus.SUCCESS, "Successfully Processed");
                 return;
             }
 
-            LocalDateTime now = LocalDateTime.now(ZoneId.of(userRepository.findById(entry.getUserId()).orElseThrow().getTimezone()));
+            Instant now = Instant.now();
 
             List<ConceptEntity> generatedConcepts = response.getFlashcardList().stream()
                     .map(flashcard -> ConceptEntity.builder()
@@ -185,17 +185,17 @@ public class ConceptProcessingService {
             // Save new concepts and create UserConceptEntity for each
             if (!toSave.isEmpty()) {
                 List<ConceptEntity> savedConcepts = conceptRepository.saveAll(toSave);
-                createUserConceptsIfMissing(savedConcepts, entry.getUserId(),entry);
+                createUserConceptsIfMissing(savedConcepts, entry.getUserId(), entry);
             }
 
             // Concepts that existed at final check — still wire up UserConceptEntity
             if (!alreadyExists.isEmpty()) {
                 List<ConceptEntity> alreadyExisting =
                         conceptRepository.findByNormalizedNameIn(new ArrayList<>(alreadyExists));
-                createUserConceptsIfMissing(alreadyExisting, entry.getUserId(),entry);
+                createUserConceptsIfMissing(alreadyExisting, entry.getUserId(), entry);
             }
 
-            markEntry(entry, ProcessStatus.SUCCESS,"Successfully Processed");
+            markEntry(entry, ProcessStatus.SUCCESS, "Successfully Processed");
 
         } catch (Exception e) {
             log.error("Failed to process entry {}: {}", entry.getUserId(), e.getMessage(), e);
@@ -205,8 +205,19 @@ public class ConceptProcessingService {
     }
 
     // Creates UserConceptEntity only if one doesn't already exist for this user+concept
-    private void createUserConceptsIfMissing(List<ConceptEntity> concepts, UUID userId,DailyEntryItemEntity dailyEntryItemEntity) {
-        LocalDateTime now = LocalDateTime.now(ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone()));
+    private void createUserConceptsIfMissing(List<ConceptEntity> concepts, UUID userId, DailyEntryItemEntity dailyEntryItemEntity) {
+        Instant now = Instant.now();
+
+        // 1. Fetch user's registered timezone to correctly calculate local contextual day boundaries
+        String userTimezone = userRepository.findById(userId)
+                .map(u -> u.getTimezone())
+                .orElse("UTC");
+        ZoneId userZone = ZoneId.of(userTimezone);
+
+        // 2. Map absolute Instants to target user's local date utilizing the explicit ZoneId context
+        LocalDate baseLocalDate = dailyEntryItemEntity.getCreatedAt() != null
+                ? LocalDate.ofInstant(dailyEntryItemEntity.getCreatedAt(), userZone)
+                : LocalDate.ofInstant(now, userZone);
 
         List<UserConceptEntity> toCreate = concepts.stream()
                 .filter(concept ->
@@ -217,8 +228,10 @@ public class ConceptProcessingService {
                         .conceptId(concept.getId())
                         .masteryScore(0)
                         .currentIntervalDays(1)
-                        .nextReviewDate(dailyEntryItemEntity.getCreatedAt().toLocalDate().plusDays(1))
+                        .nextReviewDate(baseLocalDate.plusDays(1))
                         .lastReviewedAt(null)
+                        .stability(1.0)
+                        .difficulty(5.0)
                         .reviewCount(0)
                         .failureCount(0)
                         .createdAt(now)
@@ -234,12 +247,12 @@ public class ConceptProcessingService {
 
     @Transactional(propagation = Propagation.NEVER)
     public void markEntry(DailyEntryItemEntity entry,
-                           ProcessStatus status,
-                           String comment) {
+                          ProcessStatus status,
+                          String comment) {
 
         entry.setProcessingStatus(status.name());
         entry.setProcessComment(comment);
-        entry.setUpdatedAt(LocalDateTime.now());
+        entry.setUpdatedAt(Instant.now());
 
         dailyEntryItemRepo.save(entry);
     }

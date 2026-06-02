@@ -7,6 +7,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @RestControllerAdvice
@@ -19,7 +20,7 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.builder()
                         .status(HttpStatus.BAD_REQUEST.value())
                         .message(ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -30,7 +31,7 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.builder()
                         .status(HttpStatus.UNAUTHORIZED.value())
                         .message(ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 
@@ -41,7 +42,7 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.builder()
                         .status(500)
                         .message(ex.getMessage())
-                        .timestamp(LocalDateTime.now())
+                        .timestamp(Instant.now())
                         .build());
     }
 }

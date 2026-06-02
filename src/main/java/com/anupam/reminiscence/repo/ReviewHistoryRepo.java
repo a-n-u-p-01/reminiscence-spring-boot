@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -16,9 +17,9 @@ public interface ReviewHistoryRepo extends JpaRepository<ReviewHistoryEntity, UU
     @Query("SELECT r FROM ReviewHistoryEntity r WHERE r.userId = :userId AND r.reviewedAt BETWEEN :start AND :end ORDER BY r.reviewedAt DESC")
     List<ReviewHistoryEntity> findHistoricalReviewsByDate(
             @Param("userId") UUID userId,
-            @Param("start") LocalDateTime start,
-            @Param("end") LocalDateTime end);
+            @Param("start") Instant start,
+            @Param("end") Instant end);
 
     @Query("SELECT r.reviewedAt FROM ReviewHistoryEntity r WHERE r.userId = :userId AND r.reviewedAt >= :since")
-    List<LocalDateTime> findAllReviewTimestampsSince(@Param("userId") UUID userId, @Param("since") LocalDateTime since);
+    List<Instant> findAllReviewTimestampsSince(@Param("userId") UUID userId, @Param("since") Instant since);
 }

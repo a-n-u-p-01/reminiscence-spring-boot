@@ -7,6 +7,7 @@ import com.anupam.reminiscence.dto.UpdateTopicsRequest;
 import com.anupam.reminiscence.entity.UserEntity;
 import com.anupam.reminiscence.service.UserService;
 import com.anupam.reminiscence.service.impl.DailyEntryProcessingScheduler;
+import com.anupam.reminiscence.service.impl.MemorySchedulerService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final MemorySchedulerService memorySchedulerService;
 
     @PostMapping("/entry")
     public ResponseEntity<Void> saveDailyEntry(
@@ -76,7 +78,7 @@ public class UserController {
             @RequestBody ReviewRequest request,
             @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
     ) {
-        userService.reviewConcept(user.getId(), userConceptId, request.getRating());
+        memorySchedulerService.reviewConcept(user.getId(),userConceptId,request.getRating());
         return ResponseEntity.ok().build();
     }
 

@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -20,11 +21,10 @@ public class DailyEntryProcessingScheduler {
     private final DailyEntryItemRepo dailyEntryItemRepo;
     private final ConceptProcessingService conceptProcessingService;
 
-
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Kolkata")
     public void processPendingEntries() {
 
-        log.info("Starting daily entry processing job...");
+        log.info("Starting daily entry processing job at timestamp: {}", Instant.now());
 
         List<DailyEntryItemEntity> pendingEntries =
                 dailyEntryItemRepo.findByProcessingStatusNot(ProcessStatus.SUCCESS.name());
@@ -43,12 +43,11 @@ public class DailyEntryProcessingScheduler {
                 conceptProcessingService.processEntry(entry);
 
             } catch (Exception e) {
-                log.error("Failed processing entryId={} userId={}",
-                        entry.getId(), entry.getUserId(), e);
+                log.error("Failed processing entryId={} userId={} at timestamp={}",
+                        entry.getId(), entry.getUserId(), Instant.now(), e);
             }
         }
 
-        log.info("Daily entry processing job completed.");
+        log.info("Daily entry processing job completed at timestamp: {}", Instant.now());
     }
-
 }

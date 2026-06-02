@@ -5,6 +5,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,7 +26,7 @@ public class PendingRegistrationEntity {
 
     private String otp;
 
-    private LocalDateTime expiryTime;
+    private Instant expiryTime;
 
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 }

@@ -4,8 +4,8 @@ import com.anupam.reminiscence.constants.Level;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -45,7 +45,7 @@ public class DashboardDTOs {
         private String reviewedAt;
         private Integer masteryScore;
         private Integer failureCount;
-        private LocalDateTime createdAt;
+        private Instant createdAt;
         private LocalDate nextReviewDate;
         private Integer reviewCount;
     }

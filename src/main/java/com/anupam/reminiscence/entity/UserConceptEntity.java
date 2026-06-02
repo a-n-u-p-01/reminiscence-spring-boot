@@ -3,6 +3,7 @@ package com.anupam.reminiscence.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -42,7 +43,7 @@ public class UserConceptEntity {
     private LocalDate nextReviewDate;
 
     @Column(name = "last_reviewed_at")
-    private LocalDateTime lastReviewedAt;
+    private Instant lastReviewedAt;
 
     @Column(name = "review_count", nullable = false)
     private Integer reviewCount;
@@ -52,8 +53,16 @@ public class UserConceptEntity {
 
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
+
+    @Column(name = "stability")
+    private Double stability;
+    // Memory stability in days. NULL / 0 before first review.
+
+    @Column(name = "difficulty")
+    private Double difficulty;
+    // Concept difficulty [1..10]. NULL / 0 before first review.
 }

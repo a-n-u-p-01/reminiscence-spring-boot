@@ -3,6 +3,8 @@ package com.anupam.reminiscence.entity;
 import com.anupam.reminiscence.constants.Level;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -31,8 +33,17 @@ public class ReviewHistoryEntity {
     private Integer intervalDays;
 
     @Column(name = "reviewed_at", nullable = false)
-    private LocalDateTime reviewedAt;
+    private Instant reviewedAt;
 
     @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
+
+    @Column(name = "stability_at_review")
+    private Double stabilityAtReview;
+
+    @Column(name = "difficulty_at_review")
+    private Double difficultyAtReview;
+
+    @Column(name = "retrievability_at_review")
+    private Double retrievabilityAtReview;
 }

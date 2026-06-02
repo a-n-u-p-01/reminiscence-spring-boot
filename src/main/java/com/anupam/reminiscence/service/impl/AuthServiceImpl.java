@@ -16,7 +16,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Random;
 
 @Service
@@ -65,8 +66,8 @@ public class AuthServiceImpl implements AuthService {
                                     passwordEncoder.encode(request.getPassword())
                             )
                             .otp(otp)
-                            .expiryTime(LocalDateTime.now().plusMinutes(10))
-                            .createdAt(LocalDateTime.now())
+                            .expiryTime(Instant.now().plus(10, ChronoUnit.MINUTES))
+                            .createdAt(Instant.now())
                             .build();
 
             pendingRegistrationRepository.save(pendingRegistration);
@@ -127,7 +128,7 @@ public class AuthServiceImpl implements AuthService {
                         .orElseThrow(() ->
                                 new IllegalArgumentException("No OTP request found"));
 
-        if (pending.getExpiryTime().isBefore(LocalDateTime.now())) {
+        if (pending.getExpiryTime().isBefore(Instant.now())) {
             pendingRegistrationRepository.delete(pending);
             throw new IllegalArgumentException("OTP expired");
         }
@@ -136,7 +137,7 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("Invalid OTP");
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
         UserEntity user = UserEntity.builder()
                 .fullName(pending.getFullName())

@@ -20,8 +20,7 @@ public class DailyEntryProcessingScheduler {
     private final DailyEntryItemRepo dailyEntryItemRepo;
     private final ConceptProcessingService conceptProcessingService;
 
-    @Scheduled(cron = "0 10 10 * * *", zone = "Asia/Kolkata")
-    @Scheduled(cron = "0 0 12 * * *", zone = "Asia/Kolkata")
+
     @Scheduled(cron = "0 0 0 * * *", zone = "Asia/Kolkata")
     public void processPendingEntries() {
 

@@ -72,7 +72,7 @@ public class ConceptProcessingService {
             if (!exactMatches.isEmpty()) {
                 List<ConceptEntity> alreadyExistingConcepts =
                         conceptRepository.findByNormalizedNameIn(new ArrayList<>(exactMatches));
-                createUserConceptsIfMissing(alreadyExistingConcepts, entry.getUserId());
+                createUserConceptsIfMissing(alreadyExistingConcepts, entry.getUserId(),entry);
             }
 
             List<String> afterExactFilter = new ArrayList<>();
@@ -120,7 +120,7 @@ public class ConceptProcessingService {
                             .ifPresent(matchedCandidate -> {
                                 conceptRepository.findByNormalizedName(matchedCandidate)
                                         .ifPresent(concept ->
-                                                createUserConceptsIfMissing(List.of(concept), entry.getUserId())
+                                                createUserConceptsIfMissing(List.of(concept), entry.getUserId(),entry)
                                         );
                             });
                 }
@@ -185,14 +185,14 @@ public class ConceptProcessingService {
             // Save new concepts and create UserConceptEntity for each
             if (!toSave.isEmpty()) {
                 List<ConceptEntity> savedConcepts = conceptRepository.saveAll(toSave);
-                createUserConceptsIfMissing(savedConcepts, entry.getUserId());
+                createUserConceptsIfMissing(savedConcepts, entry.getUserId(),entry);
             }
 
             // Concepts that existed at final check — still wire up UserConceptEntity
             if (!alreadyExists.isEmpty()) {
                 List<ConceptEntity> alreadyExisting =
                         conceptRepository.findByNormalizedNameIn(new ArrayList<>(alreadyExists));
-                createUserConceptsIfMissing(alreadyExisting, entry.getUserId());
+                createUserConceptsIfMissing(alreadyExisting, entry.getUserId(),entry);
             }
 
             markEntry(entry, ProcessStatus.SUCCESS,"Successfully Processed");
@@ -205,7 +205,7 @@ public class ConceptProcessingService {
     }
 
     // Creates UserConceptEntity only if one doesn't already exist for this user+concept
-    private void createUserConceptsIfMissing(List<ConceptEntity> concepts, UUID userId) {
+    private void createUserConceptsIfMissing(List<ConceptEntity> concepts, UUID userId,DailyEntryItemEntity dailyEntryItemEntity) {
         LocalDateTime now = LocalDateTime.now(ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone()));
 
         List<UserConceptEntity> toCreate = concepts.stream()
@@ -217,7 +217,7 @@ public class ConceptProcessingService {
                         .conceptId(concept.getId())
                         .masteryScore(0)
                         .currentIntervalDays(1)
-                        .nextReviewDate(LocalDate.now(ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone())).plusDays(1))
+                        .nextReviewDate(dailyEntryItemEntity.getCreatedAt().toLocalDate().plusDays(1))
                         .lastReviewedAt(null)
                         .reviewCount(0)
                         .failureCount(0)

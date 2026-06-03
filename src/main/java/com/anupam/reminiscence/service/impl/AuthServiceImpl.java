@@ -53,7 +53,7 @@ public class AuthServiceImpl implements AuthService {
             String email = request.getEmail().trim().toLowerCase();
 
             if (userRepository.existsByEmail(email)) {
-                throw new IllegalArgumentException("Email already registered");
+                throw new AuthException("Email already registered");
             }
 
             String otp = String.format("%06d", new Random().nextInt(1000000));
@@ -73,6 +73,8 @@ public class AuthServiceImpl implements AuthService {
             pendingRegistrationRepository.save(pendingRegistration);
 
             emailService.sendOtpEmail(email, otp);
+        }catch (AuthException e) {
+            throw  e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -147,6 +149,7 @@ public class AuthServiceImpl implements AuthService {
                 .dailyRevisionGoal(5)
                 .onboardingCompleted(false)
                 .isEmailVerified(true)
+                .algorithmPreference("reminiscenceFsrsV5")
                 .accountStatus(AccountStatus.ACTIVE)
                 .createdAt(now)
                 .updatedAt(now)

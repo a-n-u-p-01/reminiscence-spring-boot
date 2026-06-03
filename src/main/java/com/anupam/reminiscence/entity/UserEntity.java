@@ -50,4 +50,7 @@ public class UserEntity {
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    @Column(name = "algorithm_preference")
+    private String algorithmPreference;
 }

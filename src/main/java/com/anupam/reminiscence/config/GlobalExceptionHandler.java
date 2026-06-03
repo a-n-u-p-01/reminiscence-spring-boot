@@ -45,4 +45,14 @@ public class GlobalExceptionHandler {
                         .timestamp(Instant.now())
                         .build());
     }
+    @ExceptionHandler(AuthException.class)
+    public ResponseEntity<ErrorResponse> handleAuthEx(Exception ex) {
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(ErrorResponse.builder()
+                        .status(400)
+                        .message(ex.getMessage())
+                        .timestamp(Instant.now())
+                        .build());
+    }
 }

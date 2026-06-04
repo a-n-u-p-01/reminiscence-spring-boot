@@ -191,14 +191,14 @@ Strict requirements:
             - If the topic itself is specific, align the question to that specificity
 
             Answer rules:
-            - Answer must directly answer the question
-            - Keep it concise but sufficient to reactivate memory
-            - Accurate and easy to understand
+            - Answer must directly answer the question and easy
+            - Keep clean and clear and it should not be confusing
+            - Accurate and easy to understand and easy to read
 
             Notes rules:
-            - Notes must contain additional useful revision information NOT already in the answer
-            - Notes should act like mini revision notes
-            - 4 to 6 short clear sentences
+            - Notes must contain additional useful information NOT already in the answer
+            - Notes should contains 5 important points and high value, do not add low value point
+            - Each point should clear and easy to understand
             - No keyword dumping
 
             Concept name rules:

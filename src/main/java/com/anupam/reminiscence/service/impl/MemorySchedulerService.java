@@ -1,6 +1,6 @@
 package com.anupam.reminiscence.service.impl;
 
-import com.anupam.reminiscence.constants.Level;
+import com.anupam.reminiscence.constants.RecallRating;
 import com.anupam.reminiscence.entity.ReviewHistoryEntity;
 import com.anupam.reminiscence.entity.UserConceptEntity;
 import com.anupam.reminiscence.engine.AdvancedSchedulingEngine;
@@ -35,7 +35,7 @@ public class MemorySchedulerService {
     private static final double BACKLOG_DAMPENER_MAX_MULTIPLIER = 1.20;
 
     @Transactional(rollbackFor = Exception.class)
-    public void reviewConcept(UUID userId, UUID userConceptId, Level rating) {
+    public void reviewConcept(UUID userId, UUID userConceptId, RecallRating rating) {
 
         UserConceptEntity concept = userConceptRepo
                 .findByIdAndUserId(userConceptId, userId)
@@ -66,9 +66,9 @@ public class MemorySchedulerService {
         boolean isOverdueBacklog = false;
         if (reviewCount > 0 && currentStability > 0 && elapsedDays > (currentStability * 1.15)) {
             isOverdueBacklog = true;
-            if (rating == Level.GOOD || rating == Level.EASY) {
+            if (rating == RecallRating.RECALLED || rating == RecallRating.FLUENT) {
                 elapsedDays = Math.min(elapsedDays, currentStability * BACKLOG_DAMPENER_MAX_MULTIPLIER);
-            } else if (rating == Level.HARD) {
+            } else if (rating == RecallRating.PARTIAL) {
                 elapsedDays = currentStability;
             }
         }
@@ -94,7 +94,7 @@ public class MemorySchedulerService {
         );
 
         int newFailureCount = coalesce(concept.getFailureCount(), 0);
-        if (rating == Level.AGAIN) {
+        if (rating == RecallRating.FORGOT) {
             newFailureCount++;
         }
 
@@ -110,7 +110,7 @@ public class MemorySchedulerService {
         concept.setLastReviewedAt(nowUTC);
 
         // If an item is significantly overdue, its schedule calculates from today
-        if (isOverdueBacklog && (rating == Level.GOOD || rating == Level.EASY)) {
+        if (isOverdueBacklog && (rating == RecallRating.RECALLED || rating == RecallRating.FLUENT)) {
             concept.setNextReviewDate(todayLocal.plusDays(metrics.getIntervalDays()));
         } else {
             concept.setNextReviewDate(todayLocal.plusDays(metrics.getIntervalDays()));

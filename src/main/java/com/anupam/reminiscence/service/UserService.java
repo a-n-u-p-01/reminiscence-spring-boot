@@ -1,6 +1,5 @@
 package com.anupam.reminiscence.service;
 
-import com.anupam.reminiscence.constants.Level;
 import com.anupam.reminiscence.dto.ConceptReviewResponse;
 import com.fasterxml.jackson.core.JsonProcessingException;
 

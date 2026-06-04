@@ -1,12 +1,10 @@
 package com.anupam.reminiscence.service.impl;
 
 import com.anupam.reminiscence.ai_provider.AIOrchestratorService;
-import com.anupam.reminiscence.constants.Level;
 import com.anupam.reminiscence.constants.ProcessStatus;
 import com.anupam.reminiscence.dto.ConceptReviewResponse;
 import com.anupam.reminiscence.entity.ConceptEntity;
 import com.anupam.reminiscence.entity.DailyEntryItemEntity;
-import com.anupam.reminiscence.entity.ReviewHistoryEntity;
 import com.anupam.reminiscence.entity.UserConceptEntity;
 import com.anupam.reminiscence.repo.ConceptRepo;
 import com.anupam.reminiscence.repo.DailyEntryItemRepo;
@@ -14,7 +12,6 @@ import com.anupam.reminiscence.repo.ReviewHistoryRepo;
 import com.anupam.reminiscence.repo.UserConceptRepo;
 import com.anupam.reminiscence.entity.UserEntity;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import com.anupam.reminiscence.repo.UserRepository;
@@ -30,7 +27,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static com.anupam.reminiscence.constants.Level.*;
 
 @Service
 @RequiredArgsConstructor
@@ -87,7 +83,7 @@ public class UserServiceImpl implements UserService {
             entry.setTopicExtracted(json);
 
             DailyEntryItemEntity saved = dailyEntryItemRepo.save(entry);
-        } catch (IllegalArgumentException | JsonProcessingException e) {
+        } catch (Exception e){
             throw new RuntimeException(e);
         }
     }

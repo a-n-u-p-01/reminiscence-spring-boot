@@ -1,11 +1,10 @@
 package com.anupam.reminiscence.entity;
 
-import com.anupam.reminiscence.constants.Level;
+import com.anupam.reminiscence.constants.RecallRating;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -27,7 +26,7 @@ public class ReviewHistoryEntity {
     private UUID conceptId;
 
     @Column(nullable = false)
-    private Level quality;
+    private RecallRating quality;
 
     @Column(name = "interval_days", nullable = false)
     private Integer intervalDays;

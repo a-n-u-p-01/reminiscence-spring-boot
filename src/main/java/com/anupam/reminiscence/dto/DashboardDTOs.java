@@ -1,6 +1,6 @@
 package com.anupam.reminiscence.dto;
 
-import com.anupam.reminiscence.constants.Level;
+import com.anupam.reminiscence.constants.RecallRating;
 import lombok.Builder;
 import lombok.Data;
 
@@ -41,7 +41,7 @@ public class DashboardDTOs {
     @Builder
     public static class RevisionLogDTO {
         private String conceptName;
-        private Level quality;
+        private RecallRating quality;
         private String reviewedAt;
         private Integer masteryScore;
         private Integer failureCount;

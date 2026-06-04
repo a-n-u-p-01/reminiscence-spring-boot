@@ -56,7 +56,10 @@ public class ReminiscenceFsrsV5 implements AdvancedSchedulingEngine {
         nextDifficulty = Math.max(1.0, Math.min(10.0, nextDifficulty));
 
         int fuzzedInterval = (sanitizedElapsed < 0.15) ? 1 : generateDynamicFuzz(nextStability);
-        int masteryDelta = computeDynamicMastery(rating, nextDifficulty);
+
+        // CHANGED: Passing the real-time calculated memory retrievability
+        // to dynamically scale the mastery points based on memory risk!
+        int masteryDelta = computeDynamicMastery(rating, nextDifficulty, retrievability);
 
         return EngineMetrics.builder()
                 .stability(nextStability)
@@ -105,16 +108,38 @@ public class ReminiscenceFsrsV5 implements AdvancedSchedulingEngine {
         return Math.max(2, Math.min(36500, fuzzedDays));
     }
 
-    private int computeDynamicMastery(Level rating, double difficulty) {
-        if (rating == Level.AGAIN) return -12;
+    // CHANGED: Completely gamified rewritten algorithm
+    private int computeDynamicMastery(Level rating, double difficulty, double retrievability) {
+        // 1. Absolute Memory Fracture: If they fail, drop it hard.
+        if (rating == Level.AGAIN) {
+            return -25;
+        }
 
-        double difficultyWeight = difficulty / 5.0;
-        double baselinePoints = switch (rating) { case EASY -> 7.5; case GOOD -> 4.0; default -> 1.5; };
+        // 2. Risk-Reward Bonus: If retrievability was LOW (meaning they were about to forget it)
+        // and they still got it right, give them a massive dopamine point multiplier!
+        double memoryDefianceMultiplier = 1.0;
+        if (retrievability < 0.85) {
+            // Scales higher the closer retrievability was to hitting 0 (clutch save mechanics)
+            memoryDefianceMultiplier = 1.0 + (2.5 * (1.0 - retrievability));
+        }
 
-        // Varied Rewards: Keeping outcomes slightly unpredictable maximizes dopamine response
-        double dopamineBurstScalar = ThreadLocalRandom.current().nextDouble(0.92, 1.35);
+        // 3. Difficulty Compensation (Harder concepts yield higher point pools)
+        double difficultyWeight = 1.0 + (difficulty / 10.0);
 
-        return Math.max(1, Math.min(25, (int) Math.round(baselinePoints * difficultyWeight * dopamineBurstScalar)));
+        // 4. Base Performance Tiering
+        double baselinePoints = switch (rating) {
+            case EASY -> 8.0;
+            case GOOD -> 5.0;
+            default -> 2.0; // HARD
+        };
+
+        // 5. High-Variance Crit Rolls (92% to 145% variance to simulate satisfying game RNG)
+        double dopamineBurstScalar = ThreadLocalRandom.current().nextDouble(0.92, 1.45);
+
+        // Calculate and pack the final dynamic delta integer
+        double calculatedPoints = baselinePoints * difficultyWeight * memoryDefianceMultiplier * dopamineBurstScalar;
+
+        return Math.max(1, Math.min(35, (int) Math.round(calculatedPoints)));
     }
 
     private double seedStability(Level rating) {

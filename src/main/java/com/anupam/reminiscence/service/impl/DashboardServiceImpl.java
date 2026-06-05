@@ -167,7 +167,7 @@ public class DashboardServiceImpl implements DashboardService {
     @Transactional(readOnly = true)
     public ConceptExplorerResponse getConceptsExplorerList(UUID userId, String search, int page, boolean sortNewest) {
         // 1. Establish strict page configuration boundaries (Page limit hardcoded to 10)
-        int fixedLimit = 10;
+        int fixedLimit = 15;
 
         // Determine sorting criteria based on the userConcept metadata timestamp
         Sort sortOrder = sortNewest

@@ -31,7 +31,8 @@ public class UserController {
             @RequestBody DailyEntryRequest request,
             @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
     ) throws JsonProcessingException {
-        userService.saveDailyEntry(request.getText(), user.getId());
+//        userService.saveDailyEntry(request.getText(), user.getId());
+        userService.saveDailyEntryTopic(request.getTopics(), user.getId());
         return ResponseEntity.accepted().build(); // 202 — saved, processing in background
     }
 

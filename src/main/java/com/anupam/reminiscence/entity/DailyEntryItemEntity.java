@@ -23,7 +23,7 @@ public class DailyEntryItemEntity {
 
     private UUID userId;
 
-    @Column(name = "raw_topic", nullable = false, columnDefinition = "TEXT")
+    @Column(name = "raw_topic", columnDefinition = "TEXT")
     private String rawTopic;
 
     @Column(name = "processing_status", nullable = false, length = 10)

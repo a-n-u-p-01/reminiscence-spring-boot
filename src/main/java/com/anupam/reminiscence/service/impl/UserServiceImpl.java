@@ -41,6 +41,47 @@ public class UserServiceImpl implements UserService {
     private final ReviewHistoryRepo reviewHistoryRepo;
 
     @Override
+    public void saveDailyEntryTopic(List<String> topics, UUID userId) {
+
+        try {
+            if (topics == null || topics.isEmpty()) {
+                throw new IllegalArgumentException("Entry topics cannot be empty");
+            }
+
+            String topicJson = objectMapper.writeValueAsString(topics);
+
+            // Fetch user's timezone
+            ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
+            Instant now = Instant.now();
+            LocalDate today = LocalDate.ofInstant(now, zoneId);
+            Instant startOfDayDt = today.atStartOfDay(zoneId).toInstant();
+            Instant endOfDayDt = today.plusDays(1).atStartOfDay(zoneId).toInstant();
+
+            // Check if an entry already exists for today
+            DailyEntryItemEntity entry = dailyEntryItemRepo
+                    .findTodayEntryByUserId(userId, startOfDayDt, endOfDayDt)
+                    .map(existing -> {
+                        // Append new text to today's entry, reset to PENDING
+                        existing.setTopicExtracted(topicJson);
+                        existing.setProcessingStatus(ProcessStatus.PENDING.name());
+                        existing.setUpdatedAt(now);
+                        return existing;
+                    })
+                    .orElse(DailyEntryItemEntity.builder()
+                            .userId(userId)
+                            .topicExtracted(topicJson)
+                            .processingStatus(ProcessStatus.PENDING.name())
+                            .createdAt(now)
+                            .updatedAt(now)
+                            .build()
+                    );
+
+            DailyEntryItemEntity saved = dailyEntryItemRepo.save(entry);
+        } catch (Exception e){
+            throw new RuntimeException(e);
+        }
+    }
+    @Override
     public void saveDailyEntry(String text, UUID userId) {
 
         try {
@@ -161,4 +202,5 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Failed to update extracted topics configuration matrix", e);
         }
     }
+
 }

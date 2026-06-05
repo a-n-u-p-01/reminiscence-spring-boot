@@ -1,10 +1,13 @@
 package com.anupam.reminiscence.utils;
 
+import lombok.Data;
+
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class PromptBuilder {
+
 
     public static String buildTopicExtractionPrompt(String text) {
         return """
@@ -191,14 +194,17 @@ Strict requirements:
             - If the topic itself is specific, align the question to that specificity
 
             Answer rules:
-            - Answer must directly answer the question and easy
-            - Keep clean and clear and it should not be confusing
-            - Accurate and easy to understand and easy to read
+            - Answer must directly answer to the question
+            - Answer should simple and small and easy to read not overwhelming
+            - Answer should in one paragraph
+            - Answer each sentence should specific not a generic answer
+            - if required explain with simple example
 
             Notes rules:
             - Notes must contain additional useful information NOT already in the answer
-            - Notes should contains 5 important points and high value, do not add low value point
-            - Each point should clear and easy to understand
+            - Notes should contains 5 additional important points
+            - Note should explained clearly not a short note
+            - User example if needed
             - No keyword dumping
 
             Concept name rules:

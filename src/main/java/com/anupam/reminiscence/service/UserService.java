@@ -15,4 +15,6 @@ public interface UserService {
 //    void reviewConcept(UUID userId, UUID userConceptId, Level rating);
 
     void updateTopics(List<String> topics, UUID id);
+
+    void saveDailyEntryTopic(List<String> topics, UUID id);
 }

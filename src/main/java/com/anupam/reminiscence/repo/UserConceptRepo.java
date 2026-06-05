@@ -1,6 +1,8 @@
 package com.anupam.reminiscence.repo;
 
 import com.anupam.reminiscence.entity.UserConceptEntity;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -38,4 +40,14 @@ public interface UserConceptRepo extends JpaRepository<UserConceptEntity, UUID> 
     long countConceptsDueBetweenDates(@Param("userId") UUID userId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
     Optional<UserConceptEntity> findByUserIdAndConceptId(UUID userId, UUID conceptId);
+
+    @Query("SELECT uc FROM UserConceptEntity uc " +
+            "JOIN ConceptEntity c ON uc.conceptId = c.id " +
+            "WHERE uc.userId = :userId " +
+            "AND (:search IS NULL OR LOWER(CAST(c.name AS string)) LIKE :search)")
+    Page<UserConceptEntity> findConceptsByWorkspace(
+            @Param("userId") UUID userId,
+            @Param("search") String search, // Pass as "%" + search.toLowerCase() + "%" from ServiceImpl
+            Pageable pageable
+    );
 }

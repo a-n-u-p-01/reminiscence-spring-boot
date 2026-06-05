@@ -1,5 +1,7 @@
 package com.anupam.reminiscence.service.impl;
 
+import com.anupam.reminiscence.dto.ConceptExplorerResponse;
+import com.anupam.reminiscence.dto.ConceptItemDTO;
 import com.anupam.reminiscence.dto.DashboardDTOs.*;
 import com.anupam.reminiscence.entity.ConceptEntity;
 import com.anupam.reminiscence.entity.UserConceptEntity;
@@ -8,6 +10,10 @@ import com.anupam.reminiscence.service.DashboardService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -155,5 +161,52 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         return continuousStreak;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ConceptExplorerResponse getConceptsExplorerList(UUID userId, String search, int page, boolean sortNewest) {
+        // 1. Establish strict page configuration boundaries (Page limit hardcoded to 10)
+        int fixedLimit = 10;
+
+        // Determine sorting criteria based on the userConcept metadata timestamp
+        Sort sortOrder = sortNewest
+                ? Sort.by(Sort.Direction.DESC, "createdAt")
+                : Sort.by(Sort.Direction.ASC, "createdAt");
+
+        Pageable pageable = PageRequest.of(page, fixedLimit, sortOrder);
+
+        // 2. Clear out loose spaces in the query string
+        String sanitizedSearch = (search == null || search.trim().isEmpty()) ? null : search.trim();
+
+        // 3. Fetch Paginated database data chunk
+        Page<UserConceptEntity> databasePage = userConceptRepo.findConceptsByWorkspace(userId, sanitizedSearch, pageable);
+
+        // 4. Map the elements into complete DTOs with inner structural concept notes
+        List<ConceptItemDTO> mappedData = databasePage.getContent().stream()
+                .map(userConcept -> {
+                    // Fetch target descriptions mapping to the retention matrix index
+                    ConceptEntity coreConcept = conceptRepo.findById(userConcept.getConceptId()).orElse(null);
+
+                    return ConceptItemDTO.builder()
+                            .conceptId(userConcept.getConceptId())
+                            .conceptName(coreConcept != null ? coreConcept.getName() : "Unknown Core Reference")
+                            .masteryScore(userConcept.getMasteryScore())
+                            .reviewCount(userConcept.getReviewCount())
+                            .failureCount(userConcept.getFailureCount())
+                            .mainNote(coreConcept != null ? coreConcept.getAnswerText() : "")
+                            .extraNote(coreConcept != null ? coreConcept.getKeyNotes() : "")
+                            .createdAt(userConcept.getCreatedAt())
+                            .build();
+                })
+                .collect(Collectors.toList());
+
+        // 5. Construct structural wrapping container matching the frontend requirements
+        return ConceptExplorerResponse.builder()
+                .data(mappedData)
+                .currentPage(databasePage.getNumber() + 1) // Transform back to 1-indexed for frontend UI
+                .totalPages(databasePage.getTotalPages())
+                .totalItems(databasePage.getTotalElements())
+                .build();
     }
 }

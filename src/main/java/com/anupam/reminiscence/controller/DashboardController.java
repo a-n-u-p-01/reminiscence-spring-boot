@@ -1,5 +1,6 @@
 package com.anupam.reminiscence.controller;
 
+import com.anupam.reminiscence.dto.ConceptExplorerResponse;
 import com.anupam.reminiscence.dto.DashboardDTOs.*;
 import com.anupam.reminiscence.entity.UserEntity;
 import com.anupam.reminiscence.service.DashboardService;
@@ -40,5 +41,20 @@ public class DashboardController {
             @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
     ) {
         return ResponseEntity.ok(dashboardService.getDailyActivityDetails(user.getId(), date));
+    }
+
+    @GetMapping("/concepts")
+    public ResponseEntity<ConceptExplorerResponse> getConceptsList(
+            @RequestParam(value = "search", required = false) String search,
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "sortNewest", defaultValue = "true") boolean sortNewest,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
+    ) {
+        // Convert 1-indexed frontend page numbers to 0-indexed Spring Data page numbers
+        int pageIndex = Math.max(0, page - 1);
+
+        return ResponseEntity.ok(
+                dashboardService.getConceptsExplorerList(user.getId(), search, pageIndex, sortNewest)
+        );
     }
 }

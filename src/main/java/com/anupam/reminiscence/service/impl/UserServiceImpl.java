@@ -284,6 +284,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public void deleteConcept(UUID conceptId, UUID id) {
             try {
+             List<UserConceptEntity> userConceptEntities = userConceptRepo.findAllByConceptId(conceptId);
+             if(!userConceptEntities.isEmpty()){
+                 userConceptRepo.deleteAll(userConceptEntities);
+             }
              conceptRepo.deleteById(conceptId);
             } catch (Exception e) {
                 log.error("Error occurred: {}",e.getMessage());

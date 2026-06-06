@@ -186,10 +186,10 @@ public class DashboardServiceImpl implements DashboardService {
         List<ConceptItemDTO> mappedData = databasePage.getContent().stream()
                 .map(userConcept -> {
                     // Fetch target descriptions mapping to the retention matrix index
-                    ConceptEntity coreConcept = conceptRepo.findById(userConcept.getConceptId()).orElse(null);
+                    ConceptEntity coreConcept = conceptRepo.findById(userConcept.getConcept().getId()).orElse(null);
 
                     return ConceptItemDTO.builder()
-                            .conceptId(userConcept.getConceptId())
+                            .conceptId(userConcept.getConcept().getId())
                             .conceptName(coreConcept != null ? coreConcept.getName() : "Unknown Core Reference")
                             .masteryScore(userConcept.getMasteryScore())
                             .reviewCount(userConcept.getReviewCount())

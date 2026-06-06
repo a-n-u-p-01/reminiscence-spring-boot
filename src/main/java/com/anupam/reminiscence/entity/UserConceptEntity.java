@@ -30,8 +30,9 @@ public class UserConceptEntity {
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
-    @Column(name = "concept_id", nullable = false)
-    private UUID conceptId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "concept_id", nullable = false)
+    private ConceptEntity concept;
 
     @Column(name = "mastery_score", nullable = false)
     private Integer masteryScore;

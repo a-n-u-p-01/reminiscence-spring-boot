@@ -1,9 +1,6 @@
 package com.anupam.reminiscence.controller;
 
-import com.anupam.reminiscence.dto.ConceptReviewResponse;
-import com.anupam.reminiscence.dto.DailyEntryRequest;
-import com.anupam.reminiscence.dto.ReviewRequest;
-import com.anupam.reminiscence.dto.UpdateTopicsRequest;
+import com.anupam.reminiscence.dto.*;
 import com.anupam.reminiscence.entity.UserEntity;
 import com.anupam.reminiscence.service.UserService;
 import com.anupam.reminiscence.service.impl.DailyEntryProcessingScheduler;
@@ -84,5 +81,21 @@ public class UserController {
     }
 
 
+    @PostMapping("/concepts/upsert")
+    public ResponseEntity<Void> saveOrUpdateConcept(
+            @RequestBody UserConceptRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
+    ) {
+        userService.saveOrUpdateUserConcept(request, user.getId());
+        return ResponseEntity.ok().build();
+    }
 
+    @DeleteMapping("/concept/{id}")
+    public ResponseEntity<Void> deleteConcept(
+            @PathVariable("id") UUID conceptId,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
+    ) {
+        userService.deleteConcept(conceptId, user.getId());
+        return ResponseEntity.ok().build();
+    }
 }

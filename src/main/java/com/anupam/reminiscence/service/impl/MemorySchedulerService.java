@@ -121,7 +121,7 @@ public class MemorySchedulerService {
 
         ReviewHistoryEntity log = ReviewHistoryEntity.builder()
                 .userId(userId)
-                .conceptId(concept.getConceptId())
+                .conceptId(concept.getConcept().getId())
                 .quality(rating)
                 .intervalDays(metrics.getIntervalDays())
                 .stabilityAtReview(metrics.getStability())

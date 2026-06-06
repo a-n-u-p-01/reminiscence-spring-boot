@@ -31,4 +31,27 @@ public interface ConceptRepo extends JpaRepository<ConceptEntity, UUID> {
 
     @Query("SELECT c FROM ConceptEntity c WHERE c.normalizedName IN :names")
     List<ConceptEntity> findByNormalizedNameIn(@Param("names") List<String> names);
+
+    @Query("""
+    SELECT uc.concept.normalizedName
+    FROM UserConceptEntity uc
+    WHERE uc.userId = :userId
+      AND uc.concept.normalizedName IN :normalizedTopics
+    """)
+    List<String> findExistingNormalizedNamesUserId(
+            @Param("normalizedTopics") List<String> normalizedTopics,
+            @Param("userId") UUID userId);
+
+    @Query(value = """
+        SELECT c.normalized_name
+        FROM retention.concept c
+        JOIN retention.user_concept uc
+            ON uc.concept_id = c.id
+        WHERE uc.user_id = :userId
+          AND similarity(c.normalized_name, :topic) > 0.4
+        ORDER BY similarity(c.normalized_name, :topic) DESC
+        """, nativeQuery = true)
+    List<String> findFuzzyMatchesAndUserId(
+            @Param("topic") String topic,
+            @Param("userId") UUID userId);
 }

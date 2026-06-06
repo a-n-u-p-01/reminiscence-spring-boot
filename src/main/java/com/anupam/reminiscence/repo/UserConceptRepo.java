@@ -42,7 +42,7 @@ public interface UserConceptRepo extends JpaRepository<UserConceptEntity, UUID> 
     Optional<UserConceptEntity> findByUserIdAndConceptId(UUID userId, UUID conceptId);
 
     @Query("SELECT uc FROM UserConceptEntity uc " +
-            "JOIN ConceptEntity c ON uc.conceptId = c.id " +
+            "JOIN ConceptEntity c ON uc.concept.id = c.id " +
             "WHERE uc.userId = :userId " +
             "AND (:search IS NULL OR LOWER(CAST(c.name AS string)) LIKE :search)")
     Page<UserConceptEntity> findConceptsByWorkspace(

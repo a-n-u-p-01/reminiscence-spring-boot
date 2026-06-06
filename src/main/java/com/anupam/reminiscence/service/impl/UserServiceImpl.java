@@ -3,6 +3,7 @@ package com.anupam.reminiscence.service.impl;
 import com.anupam.reminiscence.ai_provider.AIOrchestratorService;
 import com.anupam.reminiscence.constants.ProcessStatus;
 import com.anupam.reminiscence.dto.ConceptReviewResponse;
+import com.anupam.reminiscence.dto.UserConceptRequest;
 import com.anupam.reminiscence.entity.ConceptEntity;
 import com.anupam.reminiscence.entity.DailyEntryItemEntity;
 import com.anupam.reminiscence.entity.UserConceptEntity;
@@ -19,6 +20,7 @@ import com.anupam.reminiscence.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +30,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
@@ -137,7 +140,7 @@ public class UserServiceImpl implements UserService {
         List<UserConceptEntity> pendingUserConcepts = userConceptRepo.findPendingReviews(userId, today);
 
         return pendingUserConcepts.stream().map(uc -> {
-            ConceptEntity concept = conceptRepo.findById(uc.getConceptId())
+            ConceptEntity concept = conceptRepo.findById(uc.getConcept().getId())
                     .orElseThrow(() -> new IllegalStateException("Concept content missing"));
 
             return ConceptReviewResponse.builder()
@@ -201,6 +204,91 @@ public class UserServiceImpl implements UserService {
         } catch (IllegalArgumentException | JsonProcessingException e) {
             throw new RuntimeException("Failed to update extracted topics configuration matrix", e);
         }
+    }
+
+
+    @Override
+    @Transactional
+    public void saveOrUpdateUserConcept(UserConceptRequest request, UUID userId) {
+        try {
+            if (request == null || request.getConceptName() == null || request.getConceptName().isBlank()) {
+                throw new IllegalArgumentException("Concept name cannot be empty");
+            }
+
+            Instant now = Instant.now();
+            ConceptEntity conceptEntity;
+
+
+            // 1. DETERMINE UPSERT PATH FOR GLOBAL CONCEPT MATRIX
+            if (request.getConceptId() != null) {
+                // UPDATE PATH
+                conceptEntity = conceptRepo.findById(request.getConceptId())
+                        .map(existing -> {
+                            existing.setQuestionText(request.getQuestion() != null ? request.getQuestion() : "");
+                            existing.setAnswerText(request.getMainNote()!=null?request.getMainNote():"");
+                            existing.setKeyNotes(request.getExtraNote()!=null?request.getExtraNote():"");
+                            existing.setUpdatedAt(now);
+                            return existing;
+                        })
+                        .orElseThrow(() -> new IllegalArgumentException("Concept node not found with given ID: " + request.getConceptId()));
+            } else {
+                // INSERT PATH
+                conceptEntity = ConceptEntity.builder()
+                        .name(request.getConceptName())
+                        .normalizedName(request.getConceptName().trim().toLowerCase())
+                        .questionText(request.getQuestion() != null ? request.getQuestion() : "")
+                        .answerText(request.getMainNote()!=null?request.getMainNote():"") // Default fallback structural answer placeholder
+                        .keyNotes(request.getExtraNote()!=null?request.getExtraNote():"")
+                        .difficulty("NA")
+                        .createdAt(now)
+                        .updatedAt(now)
+                        .build();
+            }
+
+            // Persist parent concept mapping details
+            ConceptEntity savedConcept = conceptRepo.save(conceptEntity);
+
+            // 2. RESOLVE USER-SPECIFIC RETENTION LAYER
+            ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
+            LocalDate today = LocalDate.now(zoneId);
+
+            userConceptRepo.findByUserIdAndConceptId(userId, savedConcept.getId())
+                    .map(existingUserConcept -> {
+                        // Keep performance history tracking metrics intact; update structural timeline properties
+                        existingUserConcept.setUpdatedAt(now);
+                        return userConceptRepo.save(existingUserConcept);
+                    })
+                    .orElseGet(() -> {
+                        // Initialize clean node instance for new memory logs
+                        UserConceptEntity newUserConcept = UserConceptEntity.builder()
+                                .userId(userId)
+                                .concept(savedConcept)
+                                .masteryScore(0)                // Starts unranked
+                                .currentIntervalDays(1)        // Initial interval spacing
+                                .nextReviewDate(today)         // Queue up for prompt evaluation matching pipeline settings
+                                .reviewCount(0)
+                                .failureCount(0)
+                                .createdAt(now)
+                                .updatedAt(now)
+                                .stability(1.0)
+                                .difficulty(5.0)               // Midpoint starting difficulty
+                                .build();
+                        return userConceptRepo.save(newUserConcept);
+                    });
+        } catch (Exception e) {
+            log.error("Error occurred: {}",e.getMessage());
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public void deleteConcept(UUID conceptId, UUID id) {
+            try {
+             conceptRepo.deleteById(conceptId);
+            } catch (Exception e) {
+                log.error("Error occurred: {}",e.getMessage());
+                throw new RuntimeException(e);
+            }
     }
 
 }

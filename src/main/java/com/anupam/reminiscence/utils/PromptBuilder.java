@@ -172,18 +172,13 @@ Strict requirements:
             5. If a submitted topic contains spelling mistakes, silently correct the spelling
                while preserving the intended meaning.
 
-            6. Standard abbreviation expansion is allowed ONLY when it represents the exact same concept.
-               Examples:
-               - JWT → JSON Web Token
-               - OOP → Object Oriented Programming
-
-            7. Related concepts are NOT substitutes.
-               A related concept must never replace the submitted one.
-
             Flashcard generation rules:
 
             - Generate EXACTLY one flashcard per submitted topic
             - Total flashcards required: EXACTLY %d
+            
+            ConceptName Rule:
+            - Same as provided exactly
 
             Question rules:
             - The question must trigger recall of the WHOLE concept, not one isolated fact
@@ -195,9 +190,7 @@ Strict requirements:
 
             Answer rules:
             - Answer must directly answer to the question
-            - Answer should simple and small and easy to read not overwhelming
-            - Answer should in one paragraph
-            - Answer each sentence should specific not a generic answer
+            - Answer should simple and easy to understanding not overwhelming
             - if required explain with simple example
 
             Notes rules:

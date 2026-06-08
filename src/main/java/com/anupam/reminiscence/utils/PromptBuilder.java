@@ -177,8 +177,6 @@ Strict requirements:
             - Generate EXACTLY one flashcard per submitted topic
             - Total flashcards required: EXACTLY %d
             
-            ConceptName Rule:
-            - Same as provided exactly
 
             Question rules:
             - The question must trigger recall of the WHOLE concept, not one isolated fact
@@ -197,13 +195,13 @@ Strict requirements:
             - Notes must contain additional useful information NOT already in the answer
             - Notes should contains 5 additional important points
             - Note should explained clearly not a short note
-            - User example if needed
-            - No keyword dumping
+            - Explain with example if needed
+            - Note should be in text, not md, not html, no numbering
 
             Concept name rules:
             - Correctly spelled
             - Title Case
-            - Preserve original meaning
+            - Same as provided exactly
 
             Return ONLY valid JSON:
 

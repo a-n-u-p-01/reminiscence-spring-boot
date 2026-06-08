@@ -2,6 +2,7 @@ package com.anupam.reminiscence.controller;
 import com.anupam.reminiscence.dto.auth.AuthResponse;
 import com.anupam.reminiscence.dto.auth.LoginRequest;
 import com.anupam.reminiscence.dto.auth.RegisterRequest;
+import com.anupam.reminiscence.service.AppInfoService;
 import com.anupam.reminiscence.service.AuthService;
 import com.anupam.reminiscence.service.impl.DailyEntryProcessingScheduler;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ public class AuthController {
 
     private final AuthService authService;
     private final DailyEntryProcessingScheduler dailyEntryProcessingScheduler;
+    private final AppInfoService appInfoService;
 
 
     @PostMapping("/register")
@@ -44,5 +46,11 @@ public class AuthController {
 
         return ResponseEntity.ok(authService.verifyOtp(loginRequest));
     }
+
+    @GetMapping("/version")
+    public ResponseEntity<String> getVersion() {
+        return ResponseEntity.ok(appInfoService.getAppVersion());
+    }
+
 
 }

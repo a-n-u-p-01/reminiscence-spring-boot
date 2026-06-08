@@ -224,9 +224,9 @@ public class UserServiceImpl implements UserService {
                 // UPDATE PATH
                 conceptEntity = conceptRepo.findById(request.getConceptId())
                         .map(existing -> {
-                            existing.setQuestionText(request.getQuestion() != null ? request.getQuestion() : "");
-                            existing.setAnswerText(request.getMainNote()!=null?request.getMainNote():"");
-                            existing.setKeyNotes(request.getExtraNote()!=null?request.getExtraNote():"");
+                            existing.setQuestionText(request.getQuestion() != null ? request.getQuestion() :existing.getQuestionText());
+                            existing.setAnswerText(request.getMainNote()!=null?request.getMainNote():existing.getAnswerText());
+                            existing.setKeyNotes(request.getExtraNote()!=null?request.getExtraNote():existing.getKeyNotes());
                             existing.setUpdatedAt(now);
                             return existing;
                         })
@@ -236,7 +236,7 @@ public class UserServiceImpl implements UserService {
                 conceptEntity = ConceptEntity.builder()
                         .name(request.getConceptName())
                         .normalizedName(request.getConceptName().trim().toLowerCase())
-                        .questionText(request.getQuestion() != null ? request.getQuestion() : "")
+                        .questionText(request.getQuestion() != null ? request.getQuestion() : request.getConceptName())
                         .answerText(request.getMainNote()!=null?request.getMainNote():"") // Default fallback structural answer placeholder
                         .keyNotes(request.getExtraNote()!=null?request.getExtraNote():"")
                         .difficulty("NA")

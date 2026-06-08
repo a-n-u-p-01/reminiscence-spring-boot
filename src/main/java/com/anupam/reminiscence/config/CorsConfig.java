@@ -21,6 +21,7 @@ public class CorsConfig {
     private static final List<String> ALLOWED_ORIGINS = List.of(
             "http://localhost:5173",
             "https://reminiscence-react.vercel.app",
+            "https://reminiscence-prototype.vercel.app/",
             "https://localhost",
             "http://localhost",
             "https://anupam.com",

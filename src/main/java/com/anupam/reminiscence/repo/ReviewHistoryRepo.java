@@ -22,4 +22,6 @@ public interface ReviewHistoryRepo extends JpaRepository<ReviewHistoryEntity, UU
 
     @Query("SELECT r.reviewedAt FROM ReviewHistoryEntity r WHERE r.userId = :userId AND r.reviewedAt >= :since")
     List<Instant> findAllReviewTimestampsSince(@Param("userId") UUID userId, @Param("since") Instant since);
+
+    void deleteByConceptId(UUID conceptId);
 }

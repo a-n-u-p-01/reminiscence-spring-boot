@@ -1,7 +1,7 @@
 package com.anupam.reminiscence.ai_provider;
 
 import com.anupam.reminiscence.dto.ai.FlashcardResponse;
-import com.anupam.reminiscence.dto.ai.GroqResponse;
+import com.anupam.reminiscence.dto.ai.GroqResponse; // Reused or map to a generic AIResponse if needed
 import com.anupam.reminiscence.dto.ai.NewTopicsResponse;
 import com.anupam.reminiscence.dto.ai.TopicsResponse;
 import com.anupam.reminiscence.utils.PromptBuilder;
@@ -18,24 +18,29 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service
-@Order(4)
+@Order(3)
 @RequiredArgsConstructor
-public class GroqProvider implements AIProvider {
+public class SiliconFlowProvider implements AIProvider {
 
-    @Value("${groq.api.key}")
+    @Value("${siliconflow.api.key}")
     private String apiKey;
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
+    // Utilizing the ultra-cost-efficient DeepSeek Flash architecture on SiliconFlow
+//    private static final String MODEL_NAME = "deepseek-ai/DeepSeek-V4-Flash";
+
+    private static final String MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct";
+
     @Override
     public TopicsResponse extractTopics(String text) {
         try {
             String prompt = PromptBuilder.buildTopicExtractionPrompt(text);
-            String raw = callGroq(prompt);
+            String raw = callSiliconFlow(prompt);
             return objectMapper.readValue(raw, TopicsResponse.class);
         } catch (Exception e) {
-            throw new RuntimeException("Groq topic extraction failed", e);
+            throw new RuntimeException("SiliconFlow topic extraction failed", e);
         }
     }
 
@@ -43,10 +48,10 @@ public class GroqProvider implements AIProvider {
     public NewTopicsResponse detectNewTopics(List<String> submittedTopics, List<String> candidates) {
         try {
             String prompt = PromptBuilder.buildDeduplicationPrompt(submittedTopics, candidates);
-            String raw = callGroq(prompt);
+            String raw = callSiliconFlow(prompt);
             return objectMapper.readValue(raw, NewTopicsResponse.class);
         } catch (Exception e) {
-            throw new RuntimeException("Groq dedup detection failed", e);
+            throw new RuntimeException("SiliconFlow dedup detection failed", e);
         }
     }
 
@@ -54,29 +59,33 @@ public class GroqProvider implements AIProvider {
     public FlashcardResponse generateFlashcards(List<String> topics) {
         try {
             String prompt = PromptBuilder.buildFlashcardPrompt(topics);
-            String raw = callGroq(prompt);
+            String raw = callSiliconFlow(prompt);
             return objectMapper.readValue(raw, FlashcardResponse.class);
         } catch (Exception e) {
-            throw new RuntimeException("Groq flashcard generation failed", e);
+            throw new RuntimeException("SiliconFlow flashcard generation failed", e);
         }
     }
 
-    private String callGroq(String prompt) throws Exception {
+    private String callSiliconFlow(String prompt) throws Exception {
+        // Enforcing JSON Mode by passing response_format down to the hardware engine
         String requestJson = """
                 {
-                  "model": "llama-3.1-8b-instant",
+                  "model": "%s",
                   "messages": [
                     {
                       "role": "user",
                       "content": %s
                     }
                   ],
+                  "response_format": {
+                    "type": "json_object"
+                  },
                   "temperature": 0.3
                 }
-                """.formatted(objectMapper.writeValueAsString(prompt));
+                """.formatted(MODEL_NAME, objectMapper.writeValueAsString(prompt));
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://api.groq.com/openai/v1/chat/completions"))
+                .uri(URI.create("https://api.siliconflow.com/v1/chat/completions"))
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
                 .POST(HttpRequest.BodyPublishers.ofString(requestJson))
@@ -85,20 +94,22 @@ public class GroqProvider implements AIProvider {
         HttpResponse<String> response =
                 httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
-        GroqResponse groqResponse =
-                objectMapper.readValue(response.body(), GroqResponse.class);
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("SiliconFlow API error code: " + response.statusCode() + " Body: " + response.body());
+        }
 
-        return groqResponse.getChoices()
+        // Mapping response via your existing GroqResponse structure if fields match (id, choices, etc.)
+        GroqResponse sfResponse = objectMapper.readValue(response.body(), GroqResponse.class);
+
+        return sfResponse.getChoices()
                 .get(0)
                 .getMessage()
                 .getContent()
-                .replace("```json", "")
-                .replace("```", "")
                 .trim();
     }
 
     @Override
     public String getProviderName() {
-        return "GROQ";
+        return "SILICONFLOW";
     }
 }

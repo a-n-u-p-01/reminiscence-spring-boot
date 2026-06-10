@@ -282,6 +282,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteConcept(UUID conceptId, UUID id) {
             try {
                 //delete user concepts mapping
@@ -290,7 +291,7 @@ public class UserServiceImpl implements UserService {
                  userConceptRepo.deleteAll(userConceptEntities);
              }
              //delete history
-                reviewHistoryRepo.deleteByConceptId(conceptId);
+             reviewHistoryRepo.deleteByConceptId(conceptId);
              conceptRepo.deleteById(conceptId);
             } catch (Exception e) {
                 log.error("Error occurred: {}",e.getMessage());

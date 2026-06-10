@@ -6,6 +6,7 @@ import com.anupam.reminiscence.dto.ai.FlashcardResponse;
 import com.anupam.reminiscence.entity.ConceptEntity;
 import com.anupam.reminiscence.entity.DailyEntryItemEntity;
 import com.anupam.reminiscence.entity.UserConceptEntity;
+import com.anupam.reminiscence.entity.UserEntity;
 import com.anupam.reminiscence.repo.ConceptRepo;
 import com.anupam.reminiscence.repo.DailyEntryItemRepo;
 import com.anupam.reminiscence.repo.UserConceptRepo;
@@ -110,7 +111,7 @@ public class ConceptProcessingService {
                 return;
             }
 
-            Instant now = Instant.now();
+
 
             List<ConceptEntity> generatedConcepts = response.getFlashcardList().stream()
                     .map(flashcard -> ConceptEntity.builder()
@@ -125,8 +126,8 @@ public class ConceptProcessingService {
                             .answerText(flashcard.getAnswer())
                             .keyNotes(flashcard.getNotes())
                             .difficulty("MEDIUM")
-                            .createdAt(now)
-                            .updatedAt(now)
+                            .createdAt(Instant.now())
+                            .updatedAt(Instant.now())
                             .build())
                     .toList();
 
@@ -150,7 +151,7 @@ public class ConceptProcessingService {
 
         // 1. Fetch user's registered timezone to correctly calculate local contextual day boundaries
         String userTimezone = userRepository.findById(userId)
-                .map(u -> u.getTimezone())
+                .map(UserEntity::getTimezone)
                 .orElse("UTC");
         ZoneId userZone = ZoneId.of(userTimezone);
 

@@ -31,7 +31,7 @@ public class SiliconFlowProvider implements AIProvider {
     // Utilizing the ultra-cost-efficient DeepSeek Flash architecture on SiliconFlow
 //    private static final String MODEL_NAME = "deepseek-ai/DeepSeek-V4-Flash";
 
-    private static final String MODEL_NAME = "Qwen/Qwen2.5-7B-Instruct";
+    private static final String MODEL_NAME = "deepseek-ai/DeepSeek-V4-Flash";
 
     @Override
     public TopicsResponse extractTopics(String text) {
@@ -80,7 +80,7 @@ public class SiliconFlowProvider implements AIProvider {
                   "response_format": {
                     "type": "json_object"
                   },
-                  "temperature": 0.3
+                  "temperature": 0.4
                 }
                 """.formatted(MODEL_NAME, objectMapper.writeValueAsString(prompt));
 

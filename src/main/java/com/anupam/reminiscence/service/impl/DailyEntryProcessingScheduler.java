@@ -26,7 +26,7 @@ public class DailyEntryProcessingScheduler {
     private final UserConceptRepo userConceptRepo;
     private final UserRepository userRepository;
 
-    @Scheduled(cron = "0 0 * * * *") // Every hour
+    @Scheduled(cron = "0 0,30 * * * *")// Every 30 minute
     public void processPendingEntries() {
 
         log.info("Starting daily entry processing job at {}", Instant.now());

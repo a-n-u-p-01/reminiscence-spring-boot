@@ -1,7 +1,7 @@
 package com.anupam.reminiscence.ai_provider;
 
 import com.anupam.reminiscence.dto.ai.FlashcardResponse;
-import com.anupam.reminiscence.dto.ai.GroqResponse; // Reusing your existing OpenAI-compatible DTO structure
+import com.anupam.reminiscence.dto.ai.GroqResponse;
 import com.anupam.reminiscence.dto.ai.NewTopicsResponse;
 import com.anupam.reminiscence.dto.ai.TopicsResponse;
 import com.anupam.reminiscence.utils.PromptBuilder;
@@ -18,18 +18,21 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service
-@Order(1)
+@Order(4)
 @RequiredArgsConstructor
 public class GitHubModelsProvider implements AIProvider {
 
-    @Value("${github.models.api.key}") // Your GitHub Personal Access Token (PAT)
+    @Value("${github.models.api.key}")
     private String apiKey;
 
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    // Selecting the most cost-efficient and structurally stable model on GitHub's ecosystem
-    private static final String MODEL_NAME = "gpt-4o-mini";
+    // The exact model ID slug as per GitHub Marketplace
+    private static final String MODEL_NAME = "openai/gpt-4.1";
+
+    // CORRECT ENDPOINT FOR GITHUB MODELS
+    private static final String API_URL = "https://models.github.ai/inference/chat/completions";
 
     @Override
     public TopicsResponse extractTopics(String text) {
@@ -65,7 +68,6 @@ public class GitHubModelsProvider implements AIProvider {
     }
 
     private String callGitHubModels(String prompt) throws Exception {
-        // Enforcing native JSON object compilation matching OpenAI specs
         String requestJson = """
                 {
                   "model": "%s",
@@ -83,14 +85,15 @@ public class GitHubModelsProvider implements AIProvider {
                 """.formatted(MODEL_NAME, objectMapper.writeValueAsString(prompt));
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://models.inference.ai.azure.com/chat/completions"))
+                .uri(URI.create(API_URL))
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
+                // MANDATORY HEADER FOR GITHUB MODELS API
+                .header("X-GitHub-Api-Version", "2022-11-28")
                 .POST(HttpRequest.BodyPublishers.ofString(requestJson))
                 .build();
 
-        HttpResponse<String> response =
-                httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() != 200) {
             throw new RuntimeException("GitHub Models Error! Status: " + response.statusCode() + " Body: " + response.body());

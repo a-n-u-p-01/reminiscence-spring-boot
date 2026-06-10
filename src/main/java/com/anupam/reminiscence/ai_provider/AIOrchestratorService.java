@@ -44,6 +44,7 @@ public class AIOrchestratorService {
     public FlashcardResponse generateFlashcards(List<String> topics) {
         for (AIProvider provider : providers) {
             try {
+                log.info("Using provider for flashcard generation: {}", provider.getProviderName());
                 return provider.generateFlashcards(topics);
             } catch (Exception ex) {
                 log.error("Provider {} failed flashcard generation: {}", provider.getProviderName(), ex.getMessage());

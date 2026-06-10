@@ -2,6 +2,7 @@ package com.anupam.reminiscence.service.impl;
 
 import com.anupam.reminiscence.ai_provider.AIOrchestratorService;
 import com.anupam.reminiscence.constants.ProcessStatus;
+import com.anupam.reminiscence.dto.ai.Flashcard;
 import com.anupam.reminiscence.dto.ai.FlashcardResponse;
 import com.anupam.reminiscence.entity.ConceptEntity;
 import com.anupam.reminiscence.entity.DailyEntryItemEntity;
@@ -102,18 +103,33 @@ public class ConceptProcessingService {
                 return;
             }
 
-            // ── AI Call 2: Flashcard generation ─────────────────────────────
-            FlashcardResponse response =
-                    aiOrchestratorService.generateFlashcards(confirmedNewTopics);
+            // ── AI Call 2: Chunked Flashcard generation ─────────────────────────────
+            List<Flashcard> allGeneratedFlashcards = new ArrayList<>();
+            int chunkSize = 4;
 
-            if (response.getFlashcardList() == null || response.getFlashcardList().isEmpty()) {
+            for (int i = 0; i < confirmedNewTopics.size(); i += chunkSize) {
+                int end = Math.min(i + chunkSize, confirmedNewTopics.size());
+                List<String> chunk = confirmedNewTopics.subList(i, end);
+
+                try {
+                    FlashcardResponse response = aiOrchestratorService.generateFlashcards(chunk);
+                    if (response.getFlashcardList() != null) {
+                        allGeneratedFlashcards.addAll(response.getFlashcardList());
+                    }
+                } catch (Exception e) {
+                    log.error("Failed to generate chunk starting at index {}: {}", i, e.getMessage());
+                    // Depending on your requirements, you can either continue or throw
+                }
+            }
+
+            if (allGeneratedFlashcards.isEmpty()) {
                 markEntry(entry, ProcessStatus.SUCCESS, "Successfully Processed");
                 return;
             }
 
 
 
-            List<ConceptEntity> generatedConcepts = response.getFlashcardList().stream()
+            List<ConceptEntity> generatedConcepts = allGeneratedFlashcards.stream()
                     .map(flashcard -> ConceptEntity.builder()
                             .name(flashcard.getConceptName())
                             .normalizedName(

@@ -189,6 +189,7 @@ Strict requirements:
             Answer rules:
             - Answer must directly answer to the question
             - Answer should simple and easy to understanding not overwhelming
+            - Strictly avoid overly academic, dense textbook definitions or robotic jargon.
             - if required explain with simple example
 
             Notes rules:

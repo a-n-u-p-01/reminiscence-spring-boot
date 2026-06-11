@@ -53,4 +53,6 @@ public class UserEntity {
 
     @Column(name = "algorithm_preference")
     private String algorithmPreference;
+    @Column(name = "push_token", columnDefinition = "TEXT")
+    private String pushToken;
 }

@@ -109,4 +109,14 @@ public class UserController {
         ConceptItemDTO response = userService.regenerateConcept(conceptId,modelName);
         return ResponseEntity.ok().body(response);
     }
+
+    @PostMapping("/users/push-token")
+    public ResponseEntity<Void> updatePushToken(
+            @RequestBody PushTokenRequest request,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
+    ) {
+        // Securely uses the authenticated interceptor 'user.getId()' directly to guarantee integrity
+        userService.savePushToken(request.getToken(), user.getId());
+        return ResponseEntity.ok().build();
+    }
 }

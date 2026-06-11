@@ -24,4 +24,6 @@ public interface UserService {
     void deleteConcept(UUID conceptId, UUID id);
 
     ConceptItemDTO regenerateConcept(String conceptId, String modelName);
+
+    void savePushToken(String token, UUID id);
 }

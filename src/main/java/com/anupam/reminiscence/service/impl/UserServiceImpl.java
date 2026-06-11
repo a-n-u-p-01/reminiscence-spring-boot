@@ -357,4 +357,19 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Flashcard generation background operation variant failed", e);
         }
     }
+
+    @Override
+    @Transactional
+    public void savePushToken(String token, UUID userId) {
+        if (token == null || token.isBlank()) {
+            throw new IllegalArgumentException("Device push token mapping configuration cannot be empty");
+        }
+
+        userRepository.findById(userId).ifPresent(user -> {
+            // Trims white space variations and saves the live key token down to the column entity
+            user.setPushToken(token.trim());
+            userRepository.save(user);
+            log.info("Successfully updated live device FCM token mapping for User ID: {}", userId);
+        });
+    }
 }

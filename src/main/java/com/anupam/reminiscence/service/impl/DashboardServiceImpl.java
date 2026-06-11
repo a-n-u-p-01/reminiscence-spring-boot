@@ -196,6 +196,7 @@ public class DashboardServiceImpl implements DashboardService {
                             .conceptId(userConcept.getConcept().getId())
                             .conceptName(coreConcept != null ? coreConcept.getName() : "Unknown Core Reference")
                             .masteryScore(userConcept.getMasteryScore())
+                            .question(userConcept.getConcept().getQuestionText())
                             .reviewCount(userConcept.getReviewCount())
                             .failureCount(userConcept.getFailureCount())
                             .mainNote(coreConcept != null ? coreConcept.getAnswerText() : "")

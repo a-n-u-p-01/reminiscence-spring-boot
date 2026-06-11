@@ -18,7 +18,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("SILICONFLOW")
-@Order(1)
+@Order(4)
 @RequiredArgsConstructor
 public class SiliconFlowProvider implements AIProvider {
 
@@ -31,7 +31,8 @@ public class SiliconFlowProvider implements AIProvider {
     // Utilizing the ultra-cost-efficient DeepSeek Flash architecture on SiliconFlow
 //    private static final String MODEL_NAME = "deepseek-ai/DeepSeek-V4-Flash";
 
-    private static final String MODEL_NAME = "deepseek-ai/DeepSeek-V4-Flash";
+    private static final String MODEL_NAME = "openai/gpt-oss-120b";
+//    moonshotai/Kimi-K2.6
 
     @Override
     public TopicsResponse extractTopics(String text) {

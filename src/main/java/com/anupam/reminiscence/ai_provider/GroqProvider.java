@@ -64,11 +64,11 @@ public class GroqProvider implements AIProvider {
     private String callGroq(String prompt) throws Exception {
         String requestJson = """
                 {
-                  "model": "llama-3.3-70b-versatile",
+                  "model": "openai/gpt-oss-120b",
                   "messages": [
                    {
                      "role": "system",
-                      "content": "You are a friendly, expert human tutor. Your goal is to help a student learn. Use simple, conversational language and analogies."
+                      "content": "You are an expert teacher creating revision notes and flashcards; explain concepts with intuition first, then definition, using simple clear English, concise examples, beginner-friendly language, and memorable explanations instead of textbook definitions."
                      },
                     {
                       "role": "user",

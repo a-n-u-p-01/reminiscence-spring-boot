@@ -79,7 +79,7 @@ public class NotificationScheduler {
             ZonedDateTime nowInZone = ZonedDateTime.now(zoneId);
 
             // Only notify if it's 5:00 AM or later
-            if (nowInZone.toLocalTime().isAfter(LocalTime.of(0, 0))) {
+            if (nowInZone.toLocalTime().isAfter(LocalTime.of(5, 0)) && nowInZone.toLocalTime().isBefore(LocalTime.of(6, 0))) {
 
                 // Check pending reviews for TODAY
                 int pendingCount = userConceptRepo.findPendingReviewsCount(user.getId(), LocalDate.now(zoneId));

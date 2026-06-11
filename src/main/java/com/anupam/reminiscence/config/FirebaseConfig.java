@@ -9,6 +9,9 @@ import jakarta.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Configuration
 public class FirebaseConfig {
@@ -25,28 +28,32 @@ public class FirebaseConfig {
     @Value("${firebase.client.email}")
     private String clientEmail;
 
+    @Value("${firebase.client.id}")
+    private String clientId;
+
     @PostConstruct
     public void initialize() {
         try {
             if (FirebaseApp.getApps().isEmpty()) {
 
-                // Cleans up the string parsing so Java processes the text newlines correctly
                 String sanitizedPrivateKey = privateKey
                         .replace("\\n", "\n")
-                        .replace("\"", ""); // Removes any trailing shell quotes
+                        .trim();
 
-                // Re-build the JSON architecture directly into local system memory
-                String simulatedJsonFile = "{\n" +
-                        "  \"type\": \"service_account\",\n" +
-                        "  \"project_id\": \"" + projectId + "\",\n" +
-                        "  \"private_key_id\": \"" + privateKeyId + "\",\n" +
-                        "  \"private_key\": \"" + sanitizedPrivateKey + "\",\n" +
-                        "  \"client_email\": \"" + clientEmail + "\"\n" +
-                        "}";
+                Map<String, Object> jsonMap = new HashMap<>();
+                jsonMap.put("type", "service_account");
+                jsonMap.put("project_id", projectId.trim());
+                jsonMap.put("private_key_id", privateKeyId.trim());
+                jsonMap.put("private_key", sanitizedPrivateKey);
+                jsonMap.put("client_email", clientEmail.trim());
+                jsonMap.put("client_id", clientId.trim()); // Added this line
+
+                ObjectMapper mapper = new ObjectMapper();
+                String perfectJsonString = mapper.writeValueAsString(jsonMap);
 
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.fromStream(
-                                new ByteArrayInputStream(simulatedJsonFile.getBytes(StandardCharsets.UTF_8))
+                                new ByteArrayInputStream(perfectJsonString.getBytes(StandardCharsets.UTF_8))
                         ))
                         .build();
 

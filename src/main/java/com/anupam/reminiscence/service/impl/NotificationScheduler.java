@@ -1,104 +1,102 @@
 package com.anupam.reminiscence.service.impl;
 
+import com.anupam.reminiscence.repo.UserConceptRepo;
 import com.anupam.reminiscence.repo.UserRepository;
-import jakarta.annotation.PostConstruct;
+import com.anupam.reminiscence.repo.DailyEntryItemRepo;
+import com.anupam.reminiscence.entity.UserEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PostConstruct;
 import java.time.*;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Component
-@EnableScheduling
 @RequiredArgsConstructor
 public class NotificationScheduler {
 
     private final PushNotificationService pushService;
     private final UserRepository userRepository;
+    private final DailyEntryItemRepo dailyEntryItemRepo;
+    private final UserConceptRepo userConceptRepo;
 
-    /**
-     * Executes every hour on the hour (e.g., 1:00, 2:00, etc.)
-     * Sweeps globally to see which users just hit their 6 PM or 7 PM local windows.
-     */
+    // Runs every 30 minutes
+    @Scheduled(cron = "0 0/30 * * * *")
     @PostConstruct
-    public void executeHourlyLocalizedNotificationSweep() {
-        log.info("Starting localized hourly notification validation sweep...");
+    public void runDailyEntryCheck() {
+        log.info("⏰ Running 30-minute inactivity notification sweep (Evening check)...");
 
-        Instant now = Instant.now();
-        List<String> target6PmTimezones = new ArrayList<>();
-        List<String> target7PmTimezones = new ArrayList<>();
+        List<UserEntity> allUsers = userRepository.findAll();
 
-        // 1. Evaluate all globally recognized timezones to check who is crossing the target hour marks
-        for (String zoneIdStr : ZoneId.getAvailableZoneIds()) {
-            try {
-                ZoneId zoneId = ZoneId.of(zoneIdStr);
-                ZonedDateTime localTime = ZonedDateTime.ofInstant(now, zoneId);
-
-                // Check if the current time in this zone is exactly between 18:00 and 18:59
-                if (localTime.getHour() == 18) {
-                    target6PmTimezones.add(zoneIdStr);
-                }
-                // Check if the current time in this zone is exactly between 19:00 and 19:59
-                else if (localTime.getHour() == 19) {
-                    target7PmTimezones.add(zoneIdStr);
-                }
-            } catch (DateTimeException e) {
-                // Skip unparseable anomalies safely
+        for (UserEntity user : allUsers) {
+            if (user.getPushToken() == null || user.getPushToken().trim().isEmpty()) {
+                continue;
             }
-        }
 
-        // 2. Process Trigger 1 (6 PM Window)
-        if (!target6PmTimezones.isEmpty()) {
-            // Revisions are matched against local date. We take the date of the first matched zone as reference.
-            LocalDate localToday = LocalDate.now(ZoneId.of(target6PmTimezones.get(0)));
+            ZoneId zoneId = ZoneId.of(user.getTimezone() != null ? user.getTimezone() : "UTC");
+            ZonedDateTime nowInZone = ZonedDateTime.now(zoneId);
 
-            List<Map<String, String>> revisionTargets = userRepository.findTokensAndNamesForRevisions(target6PmTimezones, localToday);
-            processAndDispatch(revisionTargets,
-                    "Daily Revision Ready 📚",
-                    "Hi %s, you have concepts ready for review. Keep your streak alive!",
-                    "/revisions"
-            );
-        }
+            // CHANGED: Only notify if it's after 6:00 PM (18:00) local time
+            if (nowInZone.toLocalTime().isAfter(LocalTime.of(18, 0))) {
 
-        // 3. Process Trigger 2 (7 PM Window)
-        if (!target7PmTimezones.isEmpty()) {
-            // Note completion uses local midnight boundary calculated in UTC
-            ZoneId referenceZone = ZoneId.of(target7PmTimezones.get(0));
-            Instant localMidnightUtc = LocalDate.now(referenceZone).atStartOfDay(referenceZone).toInstant();
+                Instant startOfDay = nowInZone.toLocalDate().atStartOfDay(zoneId).toInstant();
+                Instant endOfDay = nowInZone.toLocalDate().plusDays(1).atStartOfDay(zoneId).toInstant();
 
-            List<Map<String, String>> inactiveTargets = userRepository.findTokensAndNamesForInactivity(target7PmTimezones, localMidnightUtc);
-            processAndDispatch(inactiveTargets,
-                    "Write down your thoughts? ✏️",
-                    "Hey %s, you haven't saved any notes today. Take a quick moment to log what you learned!",
-                    "/notes/new"
-            );
+                boolean hasEntryToday = dailyEntryItemRepo.findTodayEntryByUserId(user.getId(), startOfDay, endOfDay).isPresent();
+
+                if (!hasEntryToday) {
+                    log.info("🔔 User {} has no entries today past 6 PM. Dispatching notification.", user.getFullName());
+
+                    String firstName = (user.getFullName() != null && !user.getFullName().isEmpty())
+                            ? user.getFullName().split(" ")[0] : "there";
+
+                    pushService.sendNotification(
+                            user.getPushToken(),
+                            "Evening Reflection 🌙",
+                            "Hey " + firstName + ", take a quick moment to log what you learned today!",
+                            "/notes/new"
+                    );
+                }
+            }
         }
     }
 
-    /**
-     * Iterates through target matches safely and formats text payloads cleanly
-     */
-    private void processAndDispatch(List<Map<String, String>> dataset, String title, String bodyTemplate, String targetRoute) {
-        if (dataset == null || dataset.isEmpty()) return;
+    // 2. NEW: 5 AM check for pending reviews
+    @Scheduled(cron = "0 0/30 * * * *") // Runs every 30 mins, logic checks for 5 AM
+    @PostConstruct
+    public void runDailyRevisionCheck() {
+        log.info("⏰ Running 30-minute pending revision notification sweep (Morning check)...");
 
-        for (Map<String, String> entry : dataset) {
-            String pushToken = entry.get("pushToken");
-            String fullName = entry.get("name");
+        List<UserEntity> allUsers = userRepository.findAll();
 
-            String cleanName = "there";
-            if (fullName != null && !fullName.trim().isEmpty()) {
-                cleanName = fullName.split(" ")[0]; // Grab first name dynamically
-            }
+        for (UserEntity user : allUsers) {
+            if (user.getPushToken() == null || user.getPushToken().trim().isEmpty()) continue;
 
-            if (pushToken != null && !pushToken.trim().isEmpty()) {
-                String dynamicBody = String.format(bodyTemplate, cleanName);
-                pushService.sendNotification(pushToken, title, dynamicBody, targetRoute);
+            ZoneId zoneId = ZoneId.of(user.getTimezone() != null ? user.getTimezone() : "UTC");
+            ZonedDateTime nowInZone = ZonedDateTime.now(zoneId);
+
+            // Only notify if it's 5:00 AM or later
+            if (nowInZone.toLocalTime().isAfter(LocalTime.of(5, 0))) {
+
+                // Check pending reviews for TODAY
+                int pendingCount = userConceptRepo.findPendingReviewsCount(user.getId(), LocalDate.now(zoneId));
+
+                if (pendingCount > 0) {
+                    log.info("📚 User {} has {} revisions pending. Sending notification.", user.getFullName(), pendingCount);
+
+                    String firstName = (user.getFullName() != null && !user.getFullName().isEmpty())
+                            ? user.getFullName().split(" ")[0] : "there";
+
+                    pushService.sendNotification(
+                            user.getPushToken(),
+                            "Morning Review Ready 📚",
+                            "Good morning " + firstName + "! You have " + pendingCount + " concepts ready for your daily revision.",
+                            "/revisions"
+                    );
+                }
             }
         }
     }

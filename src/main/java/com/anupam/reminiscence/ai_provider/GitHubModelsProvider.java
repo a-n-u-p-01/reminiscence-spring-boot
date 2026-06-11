@@ -17,7 +17,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 
-@Service
+@Service("GITHUBMODELS")
 @Order(4)
 @RequiredArgsConstructor
 public class GitHubModelsProvider implements AIProvider {
@@ -72,6 +72,10 @@ public class GitHubModelsProvider implements AIProvider {
                 {
                   "model": "%s",
                   "messages": [
+                   {
+                     "role": "system",
+                      "content": "You are a friendly, expert human tutor. Your goal is to help a student learn. Use simple, conversational language and analogies."
+                     },
                     {
                       "role": "user",
                       "content": %s

@@ -56,28 +56,32 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     @Transactional(readOnly = true)
     public Map<String, Integer> getMatrixHeatmap(UUID userId) {
-        ZoneId zoneId = ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone());
+        try {
+            ZoneId zoneId = ZoneId.of(userRepository.findById(userId).orElseThrow().getTimezone());
 
-        // Calculate the absolute Instant corresponding to the start of the day 364 days ago in user's zone
-        Instant T365DaysAgo = LocalDate.now(zoneId).minusDays(364).atStartOfDay(zoneId).toInstant();
+            // Calculate the absolute Instant corresponding to the start of the day 364 days ago in user's zone
+            Instant T365DaysAgo = LocalDate.now(zoneId).minusDays(364).atStartOfDay(zoneId).toInstant();
 
-        List<Instant> structuralReviews = reviewHistoryRepo.findAllReviewTimestampsSince(userId, T365DaysAgo);
-        List<Instant> rawEntries = dailyEntryItemRepo.findAllEntryTimestampsSince(userId, T365DaysAgo);
+            List<Instant> structuralReviews = reviewHistoryRepo.findAllReviewTimestampsSince(userId, T365DaysAgo);
+            List<Instant> rawEntries = dailyEntryItemRepo.findAllEntryTimestampsSince(userId, T365DaysAgo);
 
-        Map<String, Integer> complexMap = new HashMap<>();
-        DateTimeFormatter spatialFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(zoneId);
+            Map<String, Integer> complexMap = new HashMap<>();
+            DateTimeFormatter spatialFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(zoneId);
 
-        for (Instant instant : structuralReviews) {
-            String trackingDate = spatialFormatter.format(instant);
-            complexMap.put(trackingDate, complexMap.getOrDefault(trackingDate, 0) + 1);
+            for (Instant instant : structuralReviews) {
+                String trackingDate = spatialFormatter.format(instant);
+                complexMap.put(trackingDate, complexMap.getOrDefault(trackingDate, 0) + 1);
+            }
+
+            for (Instant instant : rawEntries) {
+                String trackingDate = spatialFormatter.format(instant);
+                complexMap.put(trackingDate, complexMap.getOrDefault(trackingDate, 0) + 1);
+            }
+
+            return complexMap;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-
-        for (Instant instant : rawEntries) {
-            String trackingDate = spatialFormatter.format(instant);
-            complexMap.put(trackingDate, complexMap.getOrDefault(trackingDate, 0) + 1);
-        }
-
-        return complexMap;
     }
 
     @Override

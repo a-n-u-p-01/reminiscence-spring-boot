@@ -17,7 +17,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 
-@Service
+@Service("GROQ")
 @Order(2)
 @RequiredArgsConstructor
 public class GroqProvider implements AIProvider {
@@ -64,8 +64,12 @@ public class GroqProvider implements AIProvider {
     private String callGroq(String prompt) throws Exception {
         String requestJson = """
                 {
-                  "model": "llama-3.1-8b-instant",
+                  "model": "llama-3.3-70b-versatile",
                   "messages": [
+                   {
+                     "role": "system",
+                      "content": "You are a friendly, expert human tutor. Your goal is to help a student learn. Use simple, conversational language and analogies."
+                     },
                     {
                       "role": "user",
                       "content": %s

@@ -13,6 +13,7 @@ public class ConceptItemDTO {
     private int masteryScore;
     private int reviewCount;
     private int failureCount;
+    private String question;
     private String mainNote;
     private String extraNote;
     private Instant createdAt;

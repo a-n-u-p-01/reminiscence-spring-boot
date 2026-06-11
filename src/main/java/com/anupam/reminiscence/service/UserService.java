@@ -1,5 +1,6 @@
 package com.anupam.reminiscence.service;
 
+import com.anupam.reminiscence.dto.ConceptItemDTO;
 import com.anupam.reminiscence.dto.ConceptReviewResponse;
 import com.anupam.reminiscence.dto.UserConceptRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -21,4 +22,6 @@ public interface UserService {
     void saveOrUpdateUserConcept(UserConceptRequest request, UUID userId);
 
     void deleteConcept(UUID conceptId, UUID id);
+
+    ConceptItemDTO regenerateConcept(String conceptId, String modelName);
 }

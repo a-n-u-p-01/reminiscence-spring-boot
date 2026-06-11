@@ -14,8 +14,8 @@
     import java.net.http.HttpResponse;
     import java.util.List;
 
-    @Service
-    @Order(1)
+    @Service("GEMINI")
+    @Order(3)
     @RequiredArgsConstructor
     public class GeminiProvider implements AIProvider {
 

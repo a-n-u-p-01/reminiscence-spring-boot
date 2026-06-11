@@ -17,8 +17,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 
-@Service
-@Order(3)
+@Service("SILICONFLOW")
+@Order(1)
 @RequiredArgsConstructor
 public class SiliconFlowProvider implements AIProvider {
 
@@ -72,6 +72,10 @@ public class SiliconFlowProvider implements AIProvider {
                 {
                   "model": "%s",
                   "messages": [
+                  {
+                     "role": "system",
+                      "content": "You are a friendly, expert human tutor. Your goal is to help a student learn. Use simple, conversational language and analogies."
+                     },
                     {
                       "role": "user",
                       "content": %s

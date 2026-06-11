@@ -1,20 +1,20 @@
 package com.anupam.reminiscence.service.impl;
 
 import com.anupam.reminiscence.ai_provider.AIOrchestratorService;
+import com.anupam.reminiscence.ai_provider.AIProvider;
 import com.anupam.reminiscence.constants.ProcessStatus;
+import com.anupam.reminiscence.dto.ConceptItemDTO;
 import com.anupam.reminiscence.dto.ConceptReviewResponse;
 import com.anupam.reminiscence.dto.UserConceptRequest;
+import com.anupam.reminiscence.dto.ai.FlashcardResponse;
 import com.anupam.reminiscence.entity.ConceptEntity;
 import com.anupam.reminiscence.entity.DailyEntryItemEntity;
 import com.anupam.reminiscence.entity.UserConceptEntity;
+import com.anupam.reminiscence.entity.UserEntity;
 import com.anupam.reminiscence.repo.ConceptRepo;
 import com.anupam.reminiscence.repo.DailyEntryItemRepo;
 import com.anupam.reminiscence.repo.ReviewHistoryRepo;
 import com.anupam.reminiscence.repo.UserConceptRepo;
-import com.anupam.reminiscence.entity.UserEntity;
-
-import java.time.Instant;
-import java.time.ZoneId;
 import com.anupam.reminiscence.repo.UserRepository;
 import com.anupam.reminiscence.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -24,11 +24,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 
 @Slf4j
 @Service
@@ -42,10 +44,10 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserConceptRepo userConceptRepo;
     private final ReviewHistoryRepo reviewHistoryRepo;
+    private final Map<String, AIProvider> providerMap;
 
     @Override
     public void saveDailyEntryTopic(List<String> topics, UUID userId) {
-
         try {
             if (topics == null || topics.isEmpty()) {
                 throw new IllegalArgumentException("Entry topics cannot be empty");
@@ -84,9 +86,9 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException(e);
         }
     }
+
     @Override
     public void saveDailyEntry(String text, UUID userId) {
-
         try {
             if (text == null || text.isBlank()) {
                 throw new IllegalArgumentException("Entry text cannot be empty");
@@ -123,7 +125,6 @@ public class UserServiceImpl implements UserService {
                     .getTopics();
 
             String json = objectMapper.writeValueAsString(topicExtracted);
-
             entry.setTopicExtracted(json);
 
             DailyEntryItemEntity saved = dailyEntryItemRepo.save(entry);
@@ -173,39 +174,36 @@ public class UserServiceImpl implements UserService {
                 throw new IllegalArgumentException("Topics configuration cannot be null");
             }
 
-            // 1. Resolve localized chronologies to lock onto today
+            // Resolve localized chronologies to lock onto today
             ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
             Instant now = Instant.now();
             LocalDate today = LocalDate.ofInstant(now, zoneId);
             Instant startOfDayDt = today.atStartOfDay(zoneId).toInstant();
             Instant endOfDayDt = today.plusDays(1).atStartOfDay(zoneId).toInstant();
 
-            // 2. Locate today's entry. If not present, do nothing.
+            // Locate today's entry. If not present, do nothing.
             java.util.Optional<DailyEntryItemEntity> existingEntryOpt =
                     dailyEntryItemRepo.findTodayEntryByUserId(userId, startOfDayDt, endOfDayDt);
 
             if (existingEntryOpt.isEmpty()) {
-                // STOPS EXECUTION: If no daily entry exists for today, do nothing.
                 return;
             }
 
             DailyEntryItemEntity entry = existingEntryOpt.get();
 
-            // 3. Update existing properties and serialize topics
+            // Update existing properties and serialize topics
             entry.setProcessingStatus(ProcessStatus.PENDING.name());
             entry.setUpdatedAt(now);
 
             String jsonPayload = objectMapper.writeValueAsString(topics);
             entry.setTopicExtracted(jsonPayload);
 
-            // 4. Save updates back to persistence layers
             dailyEntryItemRepo.save(entry);
 
         } catch (IllegalArgumentException | JsonProcessingException e) {
             throw new RuntimeException("Failed to update extracted topics configuration matrix", e);
         }
     }
-
 
     @Override
     @Transactional
@@ -218,15 +216,14 @@ public class UserServiceImpl implements UserService {
             Instant now = Instant.now();
             ConceptEntity conceptEntity;
 
-
-            // 1. DETERMINE UPSERT PATH FOR GLOBAL CONCEPT MATRIX
+            // DETERMINE UPSERT PATH FOR GLOBAL CONCEPT MATRIX
             if (request.getConceptId() != null) {
                 // UPDATE PATH
                 conceptEntity = conceptRepo.findById(request.getConceptId())
                         .map(existing -> {
-                            existing.setQuestionText(request.getQuestion() != null ? request.getQuestion() :existing.getQuestionText());
-                            existing.setAnswerText(request.getMainNote()!=null?request.getMainNote():existing.getAnswerText());
-                            existing.setKeyNotes(request.getExtraNote()!=null?request.getExtraNote():existing.getKeyNotes());
+                            existing.setQuestionText(request.getQuestion() != null ? request.getQuestion() : existing.getQuestionText());
+                            existing.setAnswerText(request.getMainNote() != null ? request.getMainNote() : existing.getAnswerText());
+                            existing.setKeyNotes(request.getExtraNote() != null ? request.getExtraNote() : existing.getKeyNotes());
                             existing.setUpdatedAt(now);
                             return existing;
                         })
@@ -237,8 +234,8 @@ public class UserServiceImpl implements UserService {
                         .name(request.getConceptName())
                         .normalizedName(request.getConceptName().trim().toLowerCase())
                         .questionText(request.getQuestion() != null ? request.getQuestion() : request.getConceptName())
-                        .answerText(request.getMainNote()!=null?request.getMainNote():"") // Default fallback structural answer placeholder
-                        .keyNotes(request.getExtraNote()!=null?request.getExtraNote():"")
+                        .answerText(request.getMainNote() != null ? request.getMainNote() : "")
+                        .keyNotes(request.getExtraNote() != null ? request.getExtraNote() : "")
                         .difficulty("NA")
                         .createdAt(now)
                         .updatedAt(now)
@@ -248,35 +245,33 @@ public class UserServiceImpl implements UserService {
             // Persist parent concept mapping details
             ConceptEntity savedConcept = conceptRepo.save(conceptEntity);
 
-            // 2. RESOLVE USER-SPECIFIC RETENTION LAYER
+            // RESOLVE USER-SPECIFIC RETENTION LAYER
             ZoneId zoneId = ZoneId.of(userRepository.findById(userId).map(UserEntity::getTimezone).orElse("UTC"));
             LocalDate today = LocalDate.now(zoneId);
 
             userConceptRepo.findByUserIdAndConceptId(userId, savedConcept.getId())
                     .map(existingUserConcept -> {
-                        // Keep performance history tracking metrics intact; update structural timeline properties
                         existingUserConcept.setUpdatedAt(now);
                         return userConceptRepo.save(existingUserConcept);
                     })
                     .orElseGet(() -> {
-                        // Initialize clean node instance for new memory logs
                         UserConceptEntity newUserConcept = UserConceptEntity.builder()
                                 .userId(userId)
                                 .concept(savedConcept)
-                                .masteryScore(0)                // Starts unranked
-                                .currentIntervalDays(1)        // Initial interval spacing
-                                .nextReviewDate(today)         // Queue up for prompt evaluation matching pipeline settings
+                                .masteryScore(0)
+                                .currentIntervalDays(1)
+                                .nextReviewDate(today)
                                 .reviewCount(0)
                                 .failureCount(0)
                                 .createdAt(now)
                                 .updatedAt(now)
                                 .stability(1.0)
-                                .difficulty(5.0)               // Midpoint starting difficulty
+                                .difficulty(5.0)
                                 .build();
                         return userConceptRepo.save(newUserConcept);
                     });
         } catch (Exception e) {
-            log.error("Error occurred: {}",e.getMessage());
+            log.error("Error occurred: {}", e.getMessage());
             throw new RuntimeException(e);
         }
     }
@@ -284,19 +279,82 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public void deleteConcept(UUID conceptId, UUID id) {
-            try {
-                //delete user concepts mapping
-             List<UserConceptEntity> userConceptEntities = userConceptRepo.findAllByConceptId(conceptId);
-             if(!userConceptEntities.isEmpty()){
-                 userConceptRepo.deleteAll(userConceptEntities);
-             }
-             //delete history
-             reviewHistoryRepo.deleteByConceptId(conceptId);
-             conceptRepo.deleteById(conceptId);
-            } catch (Exception e) {
-                log.error("Error occurred: {}",e.getMessage());
-                throw new RuntimeException(e);
+        try {
+            List<UserConceptEntity> userConceptEntities = userConceptRepo.findAllByConceptId(conceptId);
+            if (!userConceptEntities.isEmpty()) {
+                userConceptRepo.deleteAll(userConceptEntities);
             }
+            reviewHistoryRepo.deleteByConceptId(conceptId);
+            conceptRepo.deleteById(conceptId);
+        } catch (Exception e) {
+            log.error("Error occurred: {}", e.getMessage());
+            throw new RuntimeException(e);
+        }
     }
 
+    @Override
+    @Transactional
+    public ConceptItemDTO regenerateConcept(String conceptId, String modelName) {
+        try {
+            if (conceptId == null || conceptId.isBlank()) {
+                throw new IllegalArgumentException("Concept ID cannot be null or empty");
+            }
+            if (modelName == null || modelName.isBlank()) {
+                throw new IllegalArgumentException("Model provider name cannot be null or empty");
+            }
+
+            UUID id = UUID.fromString(conceptId);
+
+            // 1. Fetch the target core entity
+            ConceptEntity concept = conceptRepo.findById(id)
+                    .orElseThrow(() -> new IllegalArgumentException("Concept node not found with ID: " + conceptId));
+
+            log.info("Regenerating flashcard concept: '{}' using specific provider bean: {}", concept.getName(), modelName);
+
+            // 2. Fetch the specific bean from our map registry based on the sanitized upper-case name
+            String registryKey = modelName.trim().toUpperCase();
+            AIProvider aiProvider = providerMap.get(registryKey);
+
+            if (aiProvider == null) {
+                log.warn("AIProvider bean '{}' not found. Defaulting to fallback engine: SILICONFLOW", registryKey);
+                aiProvider = providerMap.get("SILICONFLOW");
+                if (aiProvider == null) {
+                    throw new IllegalStateException("Critical configuration failure: No AIProvider beans found in context map registry.");
+                }
+            }
+
+            // 3. Make the remote layout generation call
+            FlashcardResponse aiResponse = aiProvider.generateFlashcards(List.of(concept.getName()));
+            if (aiResponse == null || aiResponse.getFlashcardList() == null || aiResponse.getFlashcardList().isEmpty()) {
+                throw new RuntimeException("Target AI Provider (" + aiProvider.getProviderName() + ") returned an empty dataset variant.");
+            }
+
+            var freshCard = aiResponse.getFlashcardList().get(0);
+
+            // 4. Overwrite text configurations and commit persistence updates
+            Instant now = Instant.now();
+            concept.setQuestionText(freshCard.getQuestion());
+            concept.setAnswerText(freshCard.getAnswer());
+            concept.setKeyNotes(freshCard.getNotes());
+            concept.setUpdatedAt(now);
+
+            ConceptEntity updatedConcept = conceptRepo.save(concept);
+
+            // 5. Unpack context parameters cleanly into the client payload contract
+            return ConceptItemDTO.builder()
+                    .conceptId(updatedConcept.getId())
+                    .conceptName(updatedConcept.getName())
+                    .question(updatedConcept.getQuestionText())
+                    .mainNote(updatedConcept.getAnswerText())
+                    .extraNote(updatedConcept.getKeyNotes())
+                    .build();
+
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid structural identifier string configuration passed down: {}", conceptId);
+            throw e;
+        } catch (Exception e) {
+            log.error("Critical failure during backend flashcard content overwriting context flow for ID: {}", conceptId, e);
+            throw new RuntimeException("Flashcard generation background operation variant failed", e);
+        }
+    }
 }

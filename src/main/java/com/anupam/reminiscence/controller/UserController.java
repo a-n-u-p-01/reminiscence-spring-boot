@@ -98,4 +98,15 @@ public class UserController {
         userService.deleteConcept(conceptId, user.getId());
         return ResponseEntity.ok().build();
     }
+
+
+    @PostMapping("/concept/regenerate/")
+    public ResponseEntity<ConceptItemDTO> regenerateConcept(
+            @RequestParam("conceptId") String conceptId,
+            @RequestParam("modelName") String modelName,
+            @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
+    ) {
+        ConceptItemDTO response = userService.regenerateConcept(conceptId,modelName);
+        return ResponseEntity.ok().body(response);
+    }
 }

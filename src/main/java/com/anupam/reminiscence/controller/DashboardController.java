@@ -50,11 +50,8 @@ public class DashboardController {
             @RequestParam(value = "sortNewest", defaultValue = "true") boolean sortNewest,
             @Parameter(hidden = true) @AuthenticationPrincipal UserEntity user
     ) {
-        // Convert 1-indexed frontend page numbers to 0-indexed Spring Data page numbers
-        int pageIndex = Math.max(0, page - 1);
-
         return ResponseEntity.ok(
-                dashboardService.getConceptsExplorerList(user.getId(), search, pageIndex, sortNewest)
+                dashboardService.getConceptsExplorerList(user.getId(), search, page, sortNewest)
         );
     }
 }

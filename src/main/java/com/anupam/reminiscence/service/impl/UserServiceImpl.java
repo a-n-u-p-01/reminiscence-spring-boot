@@ -338,15 +338,13 @@ public class UserServiceImpl implements UserService {
             concept.setKeyNotes(freshCard.getNotes());
             concept.setUpdatedAt(now);
 
-            ConceptEntity updatedConcept = conceptRepo.save(concept);
+//            ConceptEntity updatedConcept = conceptRepo.save(concept);
 
             // 5. Unpack context parameters cleanly into the client payload contract
             return ConceptItemDTO.builder()
-                    .conceptId(updatedConcept.getId())
-                    .conceptName(updatedConcept.getName())
-                    .question(updatedConcept.getQuestionText())
-                    .mainNote(updatedConcept.getAnswerText())
-                    .extraNote(updatedConcept.getKeyNotes())
+                    .question(freshCard.getQuestion())
+                    .mainNote(freshCard.getAnswer())
+                    .extraNote(freshCard.getNotes())
                     .build();
 
         } catch (IllegalArgumentException e) {

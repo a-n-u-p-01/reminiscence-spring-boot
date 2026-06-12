@@ -4,6 +4,7 @@ import com.anupam.reminiscence.entity.UserConceptEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -14,10 +15,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface UserConceptRepo extends JpaRepository<UserConceptEntity, UUID> {
+public interface UserConceptRepo extends JpaRepository<UserConceptEntity, UUID>, JpaSpecificationExecutor<UserConceptEntity> {
 
     boolean existsByUserIdAndConceptId(UUID userId, UUID conceptId);
-    // Standard JPQL Join to fetch user metrics paired directly with static content metadata
+
     @Query("SELECT uc FROM UserConceptEntity uc WHERE uc.userId = :userId AND uc.nextReviewDate <= :today")
     List<UserConceptEntity> findPendingReviews(@Param("userId") UUID userId, @Param("today") LocalDate today);
 
@@ -46,7 +47,7 @@ public interface UserConceptRepo extends JpaRepository<UserConceptEntity, UUID> 
             "AND (:search IS NULL OR LOWER(CAST(c.name AS string)) LIKE :search)")
     Page<UserConceptEntity> findConceptsByWorkspace(
             @Param("userId") UUID userId,
-            @Param("search") String search, // Pass as "%" + search.toLowerCase() + "%" from ServiceImpl
+            @Param("search") String search,
             Pageable pageable
     );
 

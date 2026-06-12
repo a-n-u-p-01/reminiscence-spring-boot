@@ -14,6 +14,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -170,26 +171,29 @@ public class DashboardServiceImpl implements DashboardService {
     @Override
     @Transactional(readOnly = true)
     public ConceptExplorerResponse getConceptsExplorerList(UUID userId, String search, int page, boolean sortNewest) {
-        // 1. Establish strict page configuration boundaries (Page limit hardcoded to 10)
-        int fixedLimit = 15;
+        // 1. Establish strict page configuration boundaries (Page limit hardcoded to 15)
+        int fixedLimit = 10;
 
         // Determine sorting criteria based on the userConcept metadata timestamp
         Sort sortOrder = sortNewest
                 ? Sort.by(Sort.Direction.DESC, "createdAt")
                 : Sort.by(Sort.Direction.ASC, "createdAt");
 
-        Pageable pageable = PageRequest.of(page, fixedLimit, sortOrder);
+        // UI Layer uses 1-based indexing, Spring Data requires 0-based indexing
+        Pageable pageable = PageRequest.of(page - 1, fixedLimit, sortOrder);
 
         // 2. Clear out loose spaces in the query string
         String sanitizedSearch = (search == null || search.trim().isEmpty()) ? null : search.trim();
 
-        // 3. Fetch Paginated database data chunk
-        Page<UserConceptEntity> databasePage = userConceptRepo.findConceptsByWorkspace(userId, sanitizedSearch, pageable);
+        // 3. Generate the Dynamic Specification criteria matching all keyword tokens
+        Specification<UserConceptEntity> spec = UserConceptSpecifications.hasUserIdAndSearchTerm(userId, sanitizedSearch);
 
-        // 4. Map the elements into complete DTOs with inner structural concept notes
+        // 4. Fetch Paginated database data chunk using specification executor
+        Page<UserConceptEntity> databasePage = userConceptRepo.findAll(spec, pageable);
+
+        // 5. Map the elements into complete DTOs with inner structural concept notes
         List<ConceptItemDTO> mappedData = databasePage.getContent().stream()
                 .map(userConcept -> {
-                    // Fetch target descriptions mapping to the retention matrix index
                     ConceptEntity coreConcept = conceptRepo.findById(userConcept.getConcept().getId()).orElse(null);
 
                     return ConceptItemDTO.builder()
@@ -206,7 +210,7 @@ public class DashboardServiceImpl implements DashboardService {
                 })
                 .collect(Collectors.toList());
 
-        // 5. Construct structural wrapping container matching the frontend requirements
+        // 6. Construct structural wrapping container matching the frontend requirements
         return ConceptExplorerResponse.builder()
                 .data(mappedData)
                 .currentPage(databasePage.getNumber() + 1) // Transform back to 1-indexed for frontend UI

@@ -25,7 +25,6 @@ public class NotificationScheduler {
 
     // Runs every 30 minutes
     @Scheduled(cron = "0 0/30 * * * *")
-    @PostConstruct
     public void runDailyEntryCheck() {
         log.info("⏰ Running 30-minute inactivity notification sweep (Evening check)...");
 
@@ -40,7 +39,7 @@ public class NotificationScheduler {
             ZonedDateTime nowInZone = ZonedDateTime.now(zoneId);
 
             // CHANGED: Only notify if it's after 6:00 PM (18:00) local time
-            if (nowInZone.toLocalTime().isAfter(LocalTime.of(18, 0))&& nowInZone.toLocalTime().isBefore(LocalTime.of(19, 0))) {
+            if (nowInZone.toLocalTime().isAfter(LocalTime.of(19, 0))&& nowInZone.toLocalTime().isBefore(LocalTime.of(19, 40))) {
 
                 Instant startOfDay = nowInZone.toLocalDate().atStartOfDay(zoneId).toInstant();
                 Instant endOfDay = nowInZone.toLocalDate().plusDays(1).atStartOfDay(zoneId).toInstant();
@@ -57,7 +56,7 @@ public class NotificationScheduler {
                             user.getPushToken(),
                             "Evening Reflection 🌙",
                             "Hey " + firstName + ", take a quick moment to log what you learned today!",
-                            "/notes/new"
+                            "/home"
                     );
                 }
             }
@@ -66,7 +65,6 @@ public class NotificationScheduler {
 
     // 2. NEW: 5 AM check for pending reviews
     @Scheduled(cron = "0 0/30 * * * *") // Runs every 30 mins, logic checks for 5 AM
-    @PostConstruct
     public void runDailyRevisionCheck() {
         log.info("⏰ Running 30-minute pending revision notification sweep (Morning check)...");
 
@@ -79,7 +77,7 @@ public class NotificationScheduler {
             ZonedDateTime nowInZone = ZonedDateTime.now(zoneId);
 
             // Only notify if it's 5:00 AM or later
-            if (nowInZone.toLocalTime().isAfter(LocalTime.of(5, 0)) && nowInZone.toLocalTime().isBefore(LocalTime.of(6, 0))) {
+            if (nowInZone.toLocalTime().isAfter(LocalTime.of(5, 0)) && nowInZone.toLocalTime().isBefore(LocalTime.of(5, 40))) {
 
                 // Check pending reviews for TODAY
                 int pendingCount = userConceptRepo.findPendingReviewsCount(user.getId(), LocalDate.now(zoneId));
@@ -92,9 +90,9 @@ public class NotificationScheduler {
 
                     pushService.sendNotification(
                             user.getPushToken(),
-                            "Morning "+pendingCount+" Review Ready 📚",
+                            pendingCount+" Card Review Now 📚",
                             "Good morning " + firstName + "! You have " + pendingCount + " concepts ready for your daily revision.",
-                            "/revisions"
+                            "/revision"
                     );
                 }
             }

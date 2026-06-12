@@ -11,6 +11,7 @@ public class PushNotificationService {
         AndroidConfig androidConfig = AndroidConfig.builder()
                 .setPriority(AndroidConfig.Priority.HIGH)
                 .setNotification(AndroidNotification.builder()
+                        .setIcon("icon8")
                         .setSound("default")
                         .setClickAction("FCM_PLUGIN_ACTIVITY") // Wakes up Capacitor wrapper
                         .build())

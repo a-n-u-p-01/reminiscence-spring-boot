@@ -15,7 +15,7 @@
     import java.util.List;
 
     @Service("GEMINI")
-    @Order(1)
+    @Order(3)
     @RequiredArgsConstructor
     public class GeminiProvider implements AIProvider {
 

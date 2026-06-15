@@ -19,7 +19,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("MISTRAL_AI")
-@Order(6)
+@Order(4)
 @RequiredArgsConstructor
 public class MistralAIProvider implements AIProvider {
 

@@ -18,7 +18,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("CLOUDFLARE")
-@Order(5)
+@Order(2)
 @RequiredArgsConstructor
 public class CloudflareAIProvider implements AIProvider {
 

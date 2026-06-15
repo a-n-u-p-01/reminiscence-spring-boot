@@ -18,7 +18,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("SILICONFLOW")
-@Order(3)
+@Order(5)
 @RequiredArgsConstructor
 public class SiliconFlowProvider implements AIProvider {
 

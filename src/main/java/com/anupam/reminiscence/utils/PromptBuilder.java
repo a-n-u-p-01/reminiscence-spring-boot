@@ -194,86 +194,18 @@ Requirements:
 * Specific
 * Not a template
 
-ANSWER
+ Answer rules:
+            - Answer must directly answer to the question
+            - Answer should simple and easy to understanding not overwhelming
+            - Strictly avoid overly academic, dense textbook definitions or robotic jargon.
+            - if required explain with simple example
 
-Exactly 2 lines separated by a single newline.
-
-Line 1:
-Simple beginner-friendly explanation.
-
-Line 2:
-Practical purpose, effect, or outcome.
-
-INSIGHTS
-
-Generate EXACTLY 5 separate insight lines.
-
-IMPORTANT:
-The 5 insights must feel different from each other.
-
-Do NOT force a structure like:
-
-* core idea
-* why it exists
-* how it works
-* analogy
-* limitation
-
-for every flashcard.
-
-Instead choose the most educational mix for the topic.
-
-Possible insight types:
-
-* surprising fact
-* common misconception
-* practical application
-* mechanism
-* analogy
-* tradeoff
-* limitation
-* comparison
-* failure mode
-* real-world example
-* hidden detail
-* performance implication
-* mental model
-* historical reason
-* best practice
-
-Select whichever insight types fit the concept best.
-
-DIVERSITY RULES
-
-Avoid repetitive openings such as:
-
-* Most people think...
-* Most people miss...
-* It exists because...
-* It works by...
-* Imagine...
-
-Do not use the same insight structure repeatedly.
-
-Each insight should reveal a different angle.
-
-GOOD EXAMPLE
-
-Binary Search:
-
-Binary search only works when data is already sorted.
-Checking a million items may require only about twenty comparisons.
-It repeatedly removes half of the remaining search space.
-Think of finding a word in a dictionary by jumping near the middle.
-Using it on unsorted data produces incorrect results.
-
-BAD EXAMPLE
-
-It exists because...
-It works by...
-Imagine...
-Most people think...
-The mistake is...
+ Notes rules:
+            - Notes must contain additional useful information NOT already in the answer
+            - Notes should contains 5 additional important points
+            - Note should explained clearly not a short note
+            - Explain with example if needed
+            - Note should be in text, not md, not html, no numbering
 
 STYLE
 
@@ -293,18 +225,6 @@ Avoid:
 * filler
 * generic statements
 * marketing phrases
-
-BANNED PHRASES
-
-* improves efficiency
-* enhances performance
-* saves time
-* provides flexibility
-* helps developers
-* improves scalability
-* makes things easier
-* optimizes resources
-* streamlines processes
 
 Explain the actual effect instead.
 

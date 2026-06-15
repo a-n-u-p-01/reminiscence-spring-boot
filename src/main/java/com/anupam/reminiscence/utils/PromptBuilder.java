@@ -142,7 +142,6 @@ Strict requirements:
     }
 
     // AI Call 2 — flashcard generation only
-// AI Call 2 — flashcard generation only
     public static @NonNull String buildFlashcardPrompt(List<String> topics) {
 
         int count = topics.size();
@@ -152,46 +151,198 @@ Strict requirements:
                 .collect(Collectors.joining("\n"));
 
         return """
-You are a deterministic flashcard generation engine.
+You are an expert teacher and learning designer.
+
 Topics:
 %s
 
-Task: Generate EXACTLY %d flashcard(s). Silently correct spelling.
+Generate EXACTLY %d flashcards.
 
-CRITICAL QUALITY RULE:
-Be highly specific. Vague phrases like "saves time", "makes it easier", "improves efficiency", or "is beneficial" are strictly BANNED. Write plainly, like a smart peer explaining an idea over coffee.
+GOAL
 
-Question rules:
-- Direct, clean, and self-contained. Format: "What is [Topic] and how/why is it used?" (or its core purpose if it is an abstract concept).
+Teach understanding, not memorization.
 
-Answer rules (Strict 2-line layout separated by a single newline character):
-Line 1: Clear, ultra-simple core definition with zero complex jargon (1 sentence).
-Line 2: Instead of [the manual/problem state], this allows [the specific optimized outcome].
+After reading a flashcard, a learner should be able to:
 
-Notes rules (EXACTLY 5 separate text lines separated by single newlines. NO markdown, NO HTML, NO numbering, NO bullet points, and NO literal text prefixes/labels):
-Line 1: Explain the raw, underlying operational mechanism or core logic of how it functions.
-Line 2: Explain the single most powerful concrete leverage or advantage it gives you.
-Line 3: Provide a vivid, casual everyday metaphor to make the concept instantly relatable in conversation.
-Line 4: State the exact hidden trade-off, limitation, or scenario where it fails or should be avoided.
-Line 5: Describe the explicit negative symptom, real-world crash, or breakdown that occurs if this is missing or broken.
+* explain the concept in simple words
+* understand why it matters
+* recognize it in real situations
+* remember it later without rereading
+
+Silently correct spelling mistakes.
+
+QUESTION
+
+Generate the single most educational question for the topic.
+
+Choose the question naturally.
+
+Examples:
+
+* What is X?
+* How does X work?
+* Why does X matter?
+* What problem does X solve?
+* When should X be used?
+* What happens if X is missing?
+* Why does X happen?
+
+Requirements:
+
+* Self-contained
+* Natural sounding
+* Specific
+* Not a template
+
+ANSWER
+
+Exactly 2 lines separated by a single newline.
+
+Line 1:
+Simple beginner-friendly explanation.
+
+Line 2:
+Practical purpose, effect, or outcome.
+
+INSIGHTS
+
+Generate EXACTLY 5 separate insight lines.
+
+IMPORTANT:
+The 5 insights must feel different from each other.
+
+Do NOT force a structure like:
+
+* core idea
+* why it exists
+* how it works
+* analogy
+* limitation
+
+for every flashcard.
+
+Instead choose the most educational mix for the topic.
+
+Possible insight types:
+
+* surprising fact
+* common misconception
+* practical application
+* mechanism
+* analogy
+* tradeoff
+* limitation
+* comparison
+* failure mode
+* real-world example
+* hidden detail
+* performance implication
+* mental model
+* historical reason
+* best practice
+
+Select whichever insight types fit the concept best.
+
+DIVERSITY RULES
+
+Avoid repetitive openings such as:
+
+* Most people think...
+* Most people miss...
+* It exists because...
+* It works by...
+* Imagine...
+
+Do not use the same insight structure repeatedly.
+
+Each insight should reveal a different angle.
+
+GOOD EXAMPLE
+
+Binary Search:
+
+Binary search only works when data is already sorted.
+Checking a million items may require only about twenty comparisons.
+It repeatedly removes half of the remaining search space.
+Think of finding a word in a dictionary by jumping near the middle.
+Using it on unsorted data produces incorrect results.
+
+BAD EXAMPLE
+
+It exists because...
+It works by...
+Imagine...
+Most people think...
+The mistake is...
+
+STYLE
+
+Write like a smart human teacher.
+
+Use:
+
+* concrete details
+* simple language
+* vivid examples
+* memorable explanations
+
+Avoid:
+
+* textbook language
+* corporate language
+* filler
+* generic statements
+* marketing phrases
+
+BANNED PHRASES
+
+* improves efficiency
+* enhances performance
+* saves time
+* provides flexibility
+* helps developers
+* improves scalability
+* makes things easier
+* optimizes resources
+* streamlines processes
+
+Explain the actual effect instead.
+
+FACTUALITY
+
+Do not invent history, motivations, origins, or design decisions.
+
+Prefer:
+
+* what it is
+* how it works
+* why it matters
+
+over speculative explanations.
+
+OUTPUT
 
 Return ONLY valid JSON:
+
 {
-  "flashcardList": [
-    {
-      "conceptName": "Title Case matching input exactly",
-      "question": "string",
-      "answer": "string",
-      "notes": "string"
-    }
-  ]
+"flashcardList": [
+{
+"conceptName": "Topic Name",
+"question": "string",
+"answer": "string",
+"notes": "string"
+}
+]
 }
 
-Strict requirements:
-- EXACTLY %d flashcards
-- JSON only
-- No markdown formatting anywhere inside the JSON properties
-- No conversational filler text outside the JSON
-        """.formatted(numberedTopics, count, count);
+REQUIREMENTS
+
+* EXACTLY %d flashcards
+* JSON only
+* No markdown
+* No extra fields
+* No text outside JSON
+
+""".formatted(numberedTopics, count, count);
     }
 }

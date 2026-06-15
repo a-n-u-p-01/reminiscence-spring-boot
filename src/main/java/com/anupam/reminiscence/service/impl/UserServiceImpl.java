@@ -293,7 +293,6 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
     public ConceptItemDTO regenerateConcept(String conceptId, String modelName) {
         try {
             if (conceptId == null || conceptId.isBlank()) {
@@ -338,7 +337,6 @@ public class UserServiceImpl implements UserService {
             concept.setKeyNotes(freshCard.getNotes());
             concept.setUpdatedAt(now);
 
-//            ConceptEntity updatedConcept = conceptRepo.save(concept);
 
             // 5. Unpack context parameters cleanly into the client payload contract
             return ConceptItemDTO.builder()

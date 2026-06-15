@@ -1,6 +1,7 @@
 package com.anupam.reminiscence.utils;
 
 import lombok.Data;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -141,7 +142,8 @@ Strict requirements:
     }
 
     // AI Call 2 — flashcard generation only
-    public static String buildFlashcardPrompt(List<String> topics) {
+// AI Call 2 — flashcard generation only
+    public static @NonNull String buildFlashcardPrompt(List<String> topics) {
 
         int count = topics.size();
 
@@ -150,79 +152,46 @@ Strict requirements:
                 .collect(Collectors.joining("\n"));
 
         return """
-            You are a deterministic flashcard generation engine for a memory retention learning app.
+You are a deterministic flashcard generation engine.
+Topics:
+%s
 
-            Submitted topics:
-            %s
+Task: Generate EXACTLY %d flashcard(s). Silently correct spelling.
 
-            Task:
-            Generate EXACTLY one high-quality revision flashcard for EACH submitted topic.
+CRITICAL QUALITY RULE:
+Be highly specific. Vague phrases like "saves time", "makes it easier", "improves efficiency", or "is beneficial" are strictly BANNED. Write plainly, like a smart peer explaining an idea over coffee.
 
-            Core interpretation rules:
+Question rules:
+- Direct, clean, and self-contained. Format: "What is [Topic] and how/why is it used?" (or its core purpose if it is an abstract concept).
 
-            1. Treat each submitted topic literally in meaning.
+Answer rules (Strict 2-line layout separated by a single newline character):
+Line 1: Clear, ultra-simple core definition with zero complex jargon (1 sentence).
+Line 2: Instead of [the manual/problem state], this allows [the specific optimized outcome].
 
-            2. Preserve the intended concept exactly.
-               Do NOT reinterpret it as a related but different concept.
+Notes rules (EXACTLY 5 separate text lines separated by single newlines. NO markdown, NO HTML, NO numbering, NO bullet points, and NO literal text prefixes/labels):
+Line 1: Explain the raw, underlying operational mechanism or core logic of how it functions.
+Line 2: Explain the single most powerful concrete leverage or advantage it gives you.
+Line 3: Provide a vivid, casual everyday metaphor to make the concept instantly relatable in conversation.
+Line 4: State the exact hidden trade-off, limitation, or scenario where it fails or should be avoided.
+Line 5: Describe the explicit negative symptom, real-world crash, or breakdown that occurs if this is missing or broken.
 
-            3. Do NOT make a concept broader or narrower than submitted.
+Return ONLY valid JSON:
+{
+  "flashcardList": [
+    {
+      "conceptName": "Title Case matching input exactly",
+      "question": "string",
+      "answer": "string",
+      "notes": "string"
+    }
+  ]
+}
 
-            4. Do NOT invent missing qualifiers, technologies, frameworks, domains, or subtypes.
-
-            5. If a submitted topic contains spelling mistakes, silently correct the spelling
-               while preserving the intended meaning.
-
-            Flashcard generation rules:
-
-            - Generate EXACTLY one flashcard per submitted topic
-            - Total flashcards required: EXACTLY %d
-            
-
-            Question rules:
-            - The question must trigger recall of the WHOLE concept, not one isolated fact
-            - Prefer concept-level understanding over interview trivia
-            - The question should feel natural for revision
-            - The question should be complete and self-contained
-            - Prefer "What is X and how/why is it used?" style when appropriate
-            - If the topic itself is specific, align the question to that specificity
-
-            Answer rules:
-            - Answer must directly answer to the question
-            - Answer should simple and easy to understanding not overwhelming
-            - Strictly avoid overly academic, dense textbook definitions or robotic jargon.
-            - if required explain with simple example
-
-            Notes rules:
-            - Notes must contain additional useful information NOT already in the answer
-            - Notes should contains 5 additional important points
-            - Note should explained clearly not a short note
-            - Explain with example if needed
-            - Note should be in text, not md, not html, no numbering
-
-            Concept name rules:
-            - Correctly spelled
-            - Title Case
-            - Same as provided exactly
-
-            Return ONLY valid JSON:
-
-            {
-              "flashcardList": [
-                {
-                  "conceptName": "string",
-                  "question": "string",
-                  "answer": "string",
-                  "notes": "string"
-                }
-              ]
-            }
-
-            Strict requirements:
-            - EXACTLY %d flashcards
-            - JSON only
-            - No markdown
-            - No explanation
-            - No extra text
-            """.formatted(numberedTopics, count, count);
+Strict requirements:
+- EXACTLY %d flashcards
+- JSON only
+- No markdown formatting anywhere inside the JSON properties
+- No conversational filler text outside the JSON
+        """.formatted(numberedTopics, count, count);
     }
 }

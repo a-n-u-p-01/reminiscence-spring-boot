@@ -24,9 +24,9 @@ public class NotificationScheduler {
     private final UserConceptRepo userConceptRepo;
 
     // Runs every 30 minutes
-    @Scheduled(cron = "0 0/30 * * * *")
+    @Scheduled(cron = "0 0 * * * *")
     public void runDailyEntryCheck() {
-        log.info("⏰ Running 30-minute inactivity notification sweep (Evening check)...");
+        log.info("⏰ Running 1hr inactivity notification sweep (Evening check)...");
 
         List<UserEntity> allUsers = userRepository.findAll();
 
@@ -64,9 +64,9 @@ public class NotificationScheduler {
     }
 
     // 2. NEW: 5 AM check for pending reviews
-    @Scheduled(cron = "0 0/30 * * * *") // Runs every 30 mins, logic checks for 5 AM
+    @Scheduled(cron = "0 0 * * * *") // Runs every 30 mins, logic checks for 5 AM
     public void runDailyRevisionCheck() {
-        log.info("⏰ Running 30-minute pending revision notification sweep (Morning check)...");
+        log.info("⏰ Running 1hr pending revision notification sweep (Morning check)...");
 
         List<UserEntity> allUsers = userRepository.findAll();
 

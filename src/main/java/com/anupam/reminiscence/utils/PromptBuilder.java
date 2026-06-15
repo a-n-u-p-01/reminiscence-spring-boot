@@ -141,8 +141,7 @@ Strict requirements:
             """.formatted(candidateList, numberedTopics);
     }
 
-    // AI Call 2 — flashcard generation only
-    public static @NonNull String buildFlashcardPrompt(List<String> topics) {
+    public static String buildFlashcardPrompt(List<String> topics) {
 
         int count = topics.size();
 
@@ -151,118 +150,79 @@ Strict requirements:
                 .collect(Collectors.joining("\n"));
 
         return """
-You are an expert teacher and learning designer.
+        You are a deterministic flashcard generation engine for a memory retention learning app.
 
-Topics:
-%s
+        Submitted topics:
+        %s
 
-Generate EXACTLY %d flashcards.
+        Task:
+        Generate EXACTLY one high-quality revision flashcard for EACH submitted topic.
 
-GOAL
+        Core interpretation rules:
 
-Teach understanding, not memorization.
+        1. Treat each submitted topic literally in meaning.
 
-After reading a flashcard, a learner should be able to:
+        2. Preserve the intended concept exactly.
+           Do NOT reinterpret it as a related but different concept.
 
-* explain the concept in simple words
-* understand why it matters
-* recognize it in real situations
-* remember it later without rereading
+        3. Do NOT make a concept broader or narrower than submitted.
 
-Silently correct spelling mistakes.
+        4. Do NOT invent missing qualifiers, technologies, frameworks, domains, or subtypes.
 
-QUESTION
+        5. If a submitted topic contains spelling mistakes, silently correct the spelling
+           while preserving the intended meaning.
 
-Generate the single most educational question for the topic.
+        Flashcard generation rules:
 
-Choose the question naturally.
+        - Generate EXACTLY one flashcard per submitted topic
+        - Total flashcards required: EXACTLY %d
+        
 
-Examples:
+        Question rules:
+        - The question must trigger recall of the WHOLE concept, not one isolated fact
+        - Prefer concept-level understanding over interview trivia
+        - The question should feel natural for revision
+        - The question should be complete and self-contained
+        - Prefer "What is X and another good follow up question" style when appropriate
+        - If the topic itself is specific, align the question to that specificity
 
-* What is X?
-* How does X work?
-* Why does X matter?
-* What problem does X solve?
-* When should X be used?
-* What happens if X is missing?
-* Why does X happen?
+        Answer rules:
+        - Answer must directly answer to the question
+        - Answer should simple and easy to understanding not overwhelming
+        - Strictly avoid overly academic, dense textbook definitions or robotic jargon.
+        - if required explain with simple example
 
-Requirements:
+        Notes rules:
+        - Notes must contain additional useful information NOT already in the answer
+        - Notes should contains 5 additional important points
+        - Note should explained clearly not a short note
+        - Explain with example if needed
+        - Note should be in text, not md, not html, no numbering
 
-* Self-contained
-* Natural sounding
-* Specific
-* Not a template
+        Concept name rules:
+        - Correctly spelled
+        - Title Case
+        - Same as provided exactly
 
- Answer rules:
-            - Answer must directly answer to the question
-            - Answer should simple and easy to understanding not overwhelming
-            - Strictly avoid overly academic, dense textbook definitions or robotic jargon.
-            - if required explain with simple example
+        Return ONLY valid JSON:
 
- Notes rules:
-            - Notes must contain additional useful information NOT already in the answer
-            - Notes should contains 5 additional important points
-            - Note should explained clearly not a short note
-            - Explain with example if needed
-            - Note should be in text, not md, not html, no numbering
+        {
+          "flashcardList": [
+            {
+              "conceptName": "string",
+              "question": "string",
+              "answer": "string",
+              "notes": "string"
+            }
+          ]
+        }
 
-STYLE
-
-Write like a smart human teacher.
-
-Use:
-
-* concrete details
-* simple language
-* vivid examples
-* memorable explanations
-
-Avoid:
-
-* textbook language
-* corporate language
-* filler
-* generic statements
-* marketing phrases
-
-Explain the actual effect instead.
-
-FACTUALITY
-
-Do not invent history, motivations, origins, or design decisions.
-
-Prefer:
-
-* what it is
-* how it works
-* why it matters
-
-over speculative explanations.
-
-OUTPUT
-
-Return ONLY valid JSON:
-
-{
-"flashcardList": [
-{
-"conceptName": "Topic Name",
-"question": "string",
-"answer": "string",
-"notes": "string"
-}
-]
-}
-
-REQUIREMENTS
-
-* EXACTLY %d flashcards
-* JSON only
-* No markdown
-* No extra fields
-* No text outside JSON
-
-""".formatted(numberedTopics, count, count);
+        Strict requirements:
+        - EXACTLY %d flashcards
+        - JSON only
+        - No markdown
+        - No explanation
+        - No extra text
+        """.formatted(numberedTopics, count, count);
     }
 }

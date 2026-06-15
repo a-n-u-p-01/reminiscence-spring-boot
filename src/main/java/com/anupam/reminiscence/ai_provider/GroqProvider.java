@@ -18,7 +18,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("GROQ")
-@Order(2)
+@Order(4)
 @RequiredArgsConstructor
 public class GroqProvider implements AIProvider {
 

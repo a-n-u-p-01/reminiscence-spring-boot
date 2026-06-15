@@ -19,7 +19,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("MISTRAL_AI")
-@Order(7)
+@Order(6)
 @RequiredArgsConstructor
 public class MistralAIProvider implements AIProvider {
 
@@ -31,7 +31,7 @@ public class MistralAIProvider implements AIProvider {
 
     // Standardized reliable Mistral production models
     // Recommended options: "mistral-small-latest" (cost-optimized) or "mistral-large-latest" (highly capable)
-    private static final String MODEL_NAME = "mistral-small-latest";
+    private static final String MODEL_NAME = "mistral-medium-latest";
 
     @Override
     public TopicsResponse extractTopics(String text) {

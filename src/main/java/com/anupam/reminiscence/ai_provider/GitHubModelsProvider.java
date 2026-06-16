@@ -18,7 +18,7 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("GITHUBMODELS")
-@Order(1)
+@Order(4)
 @RequiredArgsConstructor
 public class GitHubModelsProvider implements AIProvider {
 

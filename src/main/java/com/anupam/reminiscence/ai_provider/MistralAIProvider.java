@@ -72,10 +72,6 @@ public class MistralAIProvider implements AIProvider {
                 {
                   "model": "%s",
                   "messages": [
-                   {
-                                     "role": "system",
-                                     "content": "You are a rigid structural data extraction engine. You strictly honor line layouts, newline breaks, and pattern mirrors without inventing conversational text blocks."
-                                   },
                     {
                       "role": "user",
                       "content": %s

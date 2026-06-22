@@ -1,13 +1,11 @@
 package com.anupam.reminiscence.ai_provider;
 
-import com.anupam.reminiscence.ai_provider.AIProvider;
-import com.anupam.reminiscence.dto.ai.FlashcardResponse;
-import com.anupam.reminiscence.dto.ai.GroqResponse; // Reusing your standardized Chat Completion DTO
-import com.anupam.reminiscence.dto.ai.NewTopicsResponse;
-import com.anupam.reminiscence.dto.ai.TopicsResponse;
+import com.anupam.reminiscence.dto.ai.*;
 import com.anupam.reminiscence.utils.PromptBuilder;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
@@ -19,8 +17,9 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("MISTRAL_AI")
-@Order(1)
+@Order(3)
 @RequiredArgsConstructor
+@Slf4j
 public class MistralAIProvider implements AIProvider {
 
     @Value("${mistral.api.key}")
@@ -29,10 +28,9 @@ public class MistralAIProvider implements AIProvider {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    // Standardized reliable Mistral production models
-    // Recommended options: "mistral-small-latest" (cost-optimized) or "mistral-large-latest" (highly capable)
     private static final String MODEL_NAME = "mistral-medium-latest";
 
+    // ---------- EXISTING METHODS (unchanged) ----------
     @Override
     public TopicsResponse extractTopics(String text) {
         try {
@@ -66,8 +64,35 @@ public class MistralAIProvider implements AIProvider {
         }
     }
 
-    private String callMistralAI(String prompt) throws Exception {
-        // Enforcing system instruction guidelines and native json_object response rules
+    // ---------- NEW METHODS ----------
+    @Override
+    public String classifyTopic(String topic) {
+        try {
+            String prompt = PromptBuilder.buildClassificationPrompt(topic);
+            String raw = callMistralAI(prompt, 0.1);
+            JsonNode root = objectMapper.readTree(raw);
+            String type = root.get("type").asText().toUpperCase();
+            log.info("Classified topic '{}' as: {}", topic, type);
+            return type;
+        } catch (Exception e) {
+            log.error("Classification failed for topic: {}, falling back to EXPLANATION", topic, e);
+            return "EXPLANATION";
+        }
+    }
+
+    @Override
+    public Flashcard generateFlashcardWithType(String topic, String type) {
+        try {
+            String prompt = PromptBuilder.buildTypedFlashcardPrompt(topic, type);
+            String raw = callMistralAI(prompt, 0.4);
+            return objectMapper.readValue(raw, Flashcard.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Typed flashcard generation failed for topic: " + topic, e);
+        }
+    }
+
+    // ---------- OVERLOADED CALL METHOD (with temperature) ----------
+    private String callMistralAI(String prompt, double temperature) throws Exception {
         String requestJson = """
                 {
                   "model": "%s",
@@ -80,9 +105,9 @@ public class MistralAIProvider implements AIProvider {
                   "response_format": {
                     "type": "json_object"
                   },
-                  "temperature": 0.4
+                  "temperature": %s
                 }
-                """.formatted(MODEL_NAME, objectMapper.writeValueAsString(prompt));
+                """.formatted(MODEL_NAME, objectMapper.writeValueAsString(prompt), temperature);
 
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.mistral.ai/v1/chat/completions"))
@@ -99,14 +124,17 @@ public class MistralAIProvider implements AIProvider {
             throw new RuntimeException("Mistral AI API error code: " + response.statusCode() + " Body: " + response.body());
         }
 
-        // Mapping response payload properties over the same structural DTO target
         GroqResponse mistralResponse = objectMapper.readValue(response.body(), GroqResponse.class);
-
         return mistralResponse.getChoices()
                 .get(0)
                 .getMessage()
                 .getContent()
                 .trim();
+    }
+
+    // ---------- ORIGINAL CALL METHOD (unchanged) ----------
+    private String callMistralAI(String prompt) throws Exception {
+        return callMistralAI(prompt, 0.4);
     }
 
     @Override

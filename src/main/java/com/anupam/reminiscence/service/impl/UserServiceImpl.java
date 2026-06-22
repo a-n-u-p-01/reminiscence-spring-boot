@@ -6,6 +6,7 @@ import com.anupam.reminiscence.constants.ProcessStatus;
 import com.anupam.reminiscence.dto.ConceptItemDTO;
 import com.anupam.reminiscence.dto.ConceptReviewResponse;
 import com.anupam.reminiscence.dto.UserConceptRequest;
+import com.anupam.reminiscence.dto.ai.Flashcard;
 import com.anupam.reminiscence.dto.ai.FlashcardResponse;
 import com.anupam.reminiscence.entity.ConceptEntity;
 import com.anupam.reminiscence.entity.DailyEntryItemEntity;
@@ -302,13 +303,8 @@ public class UserServiceImpl implements UserService {
                 throw new IllegalArgumentException("Model provider name cannot be null or empty");
             }
 
-            UUID id = UUID.fromString(conceptId);
 
-            // 1. Fetch the target core entity
-            ConceptEntity concept = conceptRepo.findById(id)
-                    .orElseThrow(() -> new IllegalArgumentException("Concept node not found with ID: " + conceptId));
-
-            log.info("Regenerating flashcard concept: '{}' using specific provider bean: {}", concept.getName(), modelName);
+            log.info("Regenerating flashcard concept: '{}' using specific provider bean: {}", conceptId, modelName);
 
             // 2. Fetch the specific bean from our map registry based on the sanitized upper-case name
             String registryKey = modelName.trim().toUpperCase();
@@ -322,27 +318,20 @@ public class UserServiceImpl implements UserService {
                 }
             }
 
+            String generationType = aiProvider.classifyTopic(conceptId);
+
             // 3. Make the remote layout generation call
-            FlashcardResponse aiResponse = aiProvider.generateFlashcards(List.of(concept.getName()));
-            if (aiResponse == null || aiResponse.getFlashcardList() == null || aiResponse.getFlashcardList().isEmpty()) {
+            Flashcard flashcard = aiProvider.generateFlashcardWithType(conceptId,generationType);
+            if (flashcard == null) {
                 throw new RuntimeException("Target AI Provider (" + aiProvider.getProviderName() + ") returned an empty dataset variant.");
             }
-
-            var freshCard = aiResponse.getFlashcardList().get(0);
-
-            // 4. Overwrite text configurations and commit persistence updates
-            Instant now = Instant.now();
-            concept.setQuestionText(freshCard.getQuestion());
-            concept.setAnswerText(freshCard.getAnswer());
-            concept.setKeyNotes(freshCard.getNotes());
-            concept.setUpdatedAt(now);
 
 
             // 5. Unpack context parameters cleanly into the client payload contract
             return ConceptItemDTO.builder()
-                    .question(freshCard.getQuestion())
-                    .mainNote(freshCard.getAnswer())
-                    .extraNote(freshCard.getNotes())
+                    .question(flashcard.getQuestion())
+                    .mainNote(flashcard.getAnswer())
+                    .extraNote(flashcard.getNotes())
                     .build();
 
         } catch (IllegalArgumentException e) {

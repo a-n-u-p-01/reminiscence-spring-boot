@@ -1,5 +1,6 @@
 package com.anupam.reminiscence.ai_provider;
 
+import com.anupam.reminiscence.dto.ai.Flashcard;
 import com.anupam.reminiscence.dto.ai.FlashcardResponse;
 import com.anupam.reminiscence.dto.ai.NewTopicsResponse;
 import com.anupam.reminiscence.dto.ai.TopicsResponse;
@@ -18,4 +19,7 @@ public interface AIProvider {
     FlashcardResponse generateFlashcards(List<String> topics);
 
     String getProviderName();
+    Flashcard generateFlashcardWithType(String topic, String type);
+
+    String classifyTopic(String topic);
 }

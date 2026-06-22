@@ -1,12 +1,11 @@
 package com.anupam.reminiscence.ai_provider;
 
-import com.anupam.reminiscence.dto.ai.FlashcardResponse;
-import com.anupam.reminiscence.dto.ai.GroqResponse; // Reused or map to a generic AIResponse if needed
-import com.anupam.reminiscence.dto.ai.NewTopicsResponse;
-import com.anupam.reminiscence.dto.ai.TopicsResponse;
+import com.anupam.reminiscence.dto.ai.*;
 import com.anupam.reminiscence.utils.PromptBuilder;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
@@ -18,8 +17,9 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("SILICONFLOW")
-@Order(3)
+@Order(5)
 @RequiredArgsConstructor
+@Slf4j
 public class SiliconFlowProvider implements AIProvider {
 
     @Value("${siliconflow.api.key}")
@@ -28,12 +28,9 @@ public class SiliconFlowProvider implements AIProvider {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    // Utilizing the ultra-cost-efficient DeepSeek Flash architecture on SiliconFlow
-//    private static final String MODEL_NAME = "deepseek-ai/DeepSeek-V4-Flash";
-
     private static final String MODEL_NAME = "openai/gpt-oss-120b";
-//    moonshotai/Kimi-K2.6
 
+    // ---------- EXISTING METHODS (unchanged) ----------
     @Override
     public TopicsResponse extractTopics(String text) {
         try {
@@ -67,8 +64,8 @@ public class SiliconFlowProvider implements AIProvider {
         }
     }
 
+    // ---------- ORIGINAL CALL METHOD (unchanged) ----------
     private String callSiliconFlow(String prompt) throws Exception {
-        // Enforcing JSON Mode by passing response_format down to the hardware engine
         String requestJson = """
                 {
                   "model": "%s",
@@ -103,9 +100,78 @@ public class SiliconFlowProvider implements AIProvider {
             throw new RuntimeException("SiliconFlow API error code: " + response.statusCode() + " Body: " + response.body());
         }
 
-        // Mapping response via your existing GroqResponse structure if fields match (id, choices, etc.)
         GroqResponse sfResponse = objectMapper.readValue(response.body(), GroqResponse.class);
+        return sfResponse.getChoices()
+                .get(0)
+                .getMessage()
+                .getContent()
+                .trim();
+    }
 
+    // ---------- NEW METHODS ----------
+    @Override
+    public String classifyTopic(String topic) {
+        try {
+            String prompt = PromptBuilder.buildClassificationPrompt(topic);
+            String raw = callSiliconFlow(prompt, 0.1);
+            JsonNode root = objectMapper.readTree(raw);
+            String type = root.get("type").asText().toUpperCase();
+            log.info("Classified topic '{}' as: {}", topic, type);
+            return type;
+        } catch (Exception e) {
+            log.error("Classification failed for topic: {}, falling back to EXPLANATION", topic, e);
+            return "EXPLANATION";
+        }
+    }
+
+    @Override
+    public Flashcard generateFlashcardWithType(String topic, String type) {
+        try {
+            String prompt = PromptBuilder.buildTypedFlashcardPrompt(topic, type);
+            String raw = callSiliconFlow(prompt, 0.4);
+            return objectMapper.readValue(raw, Flashcard.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Typed flashcard generation failed for topic: " + topic, e);
+        }
+    }
+
+    // ---------- NEW OVERLOADED CALL METHOD (with temperature) ----------
+    private String callSiliconFlow(String prompt, double temperature) throws Exception {
+        String requestJson = """
+                {
+                  "model": "%s",
+                  "messages": [
+                    {
+                      "role": "system",
+                      "content": "You are a friendly, expert human tutor. Your goal is to help a student learn. Use simple, conversational language and analogies."
+                    },
+                    {
+                      "role": "user",
+                      "content": %s
+                    }
+                  ],
+                  "response_format": {
+                    "type": "json_object"
+                  },
+                  "temperature": %s
+                }
+                """.formatted(MODEL_NAME, objectMapper.writeValueAsString(prompt), temperature);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://api.siliconflow.com/v1/chat/completions"))
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(requestJson))
+                .build();
+
+        HttpResponse<String> response =
+                httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("SiliconFlow API error code: " + response.statusCode() + " Body: " + response.body());
+        }
+
+        GroqResponse sfResponse = objectMapper.readValue(response.body(), GroqResponse.class);
         return sfResponse.getChoices()
                 .get(0)
                 .getMessage()

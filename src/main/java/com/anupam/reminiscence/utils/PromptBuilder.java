@@ -140,6 +140,120 @@ Strict requirements:
             No explanation.
             """.formatted(candidateList, numberedTopics);
     }
+    public static String buildClassificationPrompt(String topic) {
+        return """
+    You are a topic classifier. Analyze the following topic and decide the most appropriate flashcard format.
+    Choose exactly ONE of these types:
+    - EXPLANATION: For abstract concepts, principles, theories (e.g., Loose coupling, Dependency injection).
+    - LIST: For sets of items, methods, functions, features (e.g., String methods, HTTP status codes).
+    - STEPS: For processes, workflows, step-by-step guides (e.g., How to set up Jest, Deploy a React app).
+    - COMPARISON: For comparing two or more items (e.g., React vs Vue, SQL vs NoSQL).
+    - SUMMARY: For quick, concise overviews (e.g., JavaScript closure, Hoisting).
+    - EXAMPLE: For practical code snippets, real-world scenarios (e.g., Singleton pattern in Java).
+
+    Topic: "%s"
+
+    Return ONLY a valid JSON object: {"type": "TYPE_NAME"}
+    """.formatted(topic);
+    }
+
+    public static String buildTypedFlashcardPrompt(String topic, String type) {
+        String typeInstructions = switch (type.toUpperCase()) {
+            case "EXPLANATION" -> """
+            Structure the flashcard as a Deep Explanation:
+            - Answer: Define the concept, explain its importance, give a concrete example. Write in well-structured paragraphs.
+            - Question: Ask "Explain what X is and why it is important."
+            """;
+            case "LIST" -> """
+            Structure the flashcard as a List / Enumeration:
+            - Answer: Start with a brief definition, then provide a bulleted list of key items with a short description for each.
+            - Question: Ask "What are the key X and what do they do?"
+            """;
+            case "STEPS" -> """
+            Structure the flashcard as a Step-by-Step Guide:
+            - Answer: Provide a clear, numbered step-by-step guide.
+            - Question: Ask "How do you perform X?"
+            """;
+            case "COMPARISON" -> """
+            Structure the flashcard as a Comparison:
+            - Answer: Highlight similarities, differences, pros/cons, and use cases.
+            - Question: Ask "What are the differences between A and B?" (or similar).
+            """;
+            case "SUMMARY" -> """
+            Structure the flashcard as a Concise Summary:
+            - Answer: Provide a 2-3 sentence crisp summary.
+            - Question: Ask "Define X in one sentence." or similar.
+            """;
+            case "EXAMPLE" -> """
+            Structure the flashcard as a Real-world Example:
+            - Answer: Show a concrete example (code/pseudocode/scenario) and explain it.
+            - Question: Ask "Give a real-world scenario where X applies."
+            """;
+            default -> """
+            Structure the flashcard in a balanced, informative way.
+            """;
+        };
+
+        return """
+    You are a flashcard generation engine for a spaced-repetition learning app.
+    Your job is to turn the submitted topic into ONE clear, accurate, and easy-to-remember revision flashcard.
+
+    Topic: "%s"
+    Required Type: %s
+
+    %s
+
+    Field "conceptName":
+    - The submitted topic, with correct spelling and in Title Case.
+    - Keep the same concept that was submitted; only fix spelling and capitalization, never replace it with a different term.
+
+    Field "question":
+    - Write ONE clear question that makes the learner recall the WHOLE concept, not just one small fact.
+    - Aim for genuine understanding of the idea, not interview trivia.
+    - Make the question complete and self-contained, so it makes sense on its own without seeing the topic name.
+    - Phrase it the way a learner would naturally review the topic.
+    - If the topic is specific, match the question to that level of specificity.
+    - Ask only one thing. Do NOT combine multiple questions into one.
+    - Adapt the question to the required type (e.g., "What are the key X?" for LIST, "How do you perform X?" for STEPS, etc.).
+
+    Field "answer":
+    - Directly and fully answer the question.
+    - Use simple, everyday language that makes sense on the very first read.
+    - Avoid dense textbook definitions, heavy jargon, and robotic phrasing.
+    - Follow the structure specified for the required type.
+    - If it aids understanding, include a short, concrete example.
+    - Only 2 to 3 sentence.
+
+    Field "notes":
+    - Add extra useful information that is NOT already stated in the answer.
+    - Cover five distinct and important points that deepen understanding of the concept, such as common uses, key benefits, typical mistakes, helpful comparisons, or a real-world example.
+    - Explain each point clearly in a short sentence, not as a one-word label.
+    - Use a simple example wherever it makes a point easier to grasp.
+    - Use clear, friendly language that is easy to read even for someone seeing the topic for the first time.
+    - Write the notes as plain, connected sentences in a single flowing paragraph: no markdown, no HTML, no bullet symbols, no numbering, and no headings.
+
+    Overall writing style for every card:
+    - Clear, calm, and beginner-friendly.
+    - Prefer short sentences over long, packed ones.
+    - Explain any unavoidable technical term in plain words.
+
+    Return ONLY valid JSON in exactly this shape:
+
+        {
+          "conceptName": "string",
+          "question": "string",
+          "answer": "string",
+          "notes": "string"
+        }
+
+    Strict requirements:
+    - EXACTLY one flashcard, for the submitted topic.
+    - Valid JSON only.
+    - No markdown.
+    - No explanation.
+    - No extra text before or after the JSON.
+    """.formatted(topic, type, typeInstructions);
+    }
 
     public static String buildFlashcardPrompt(List<String> topics) {
 
@@ -150,79 +264,74 @@ Strict requirements:
                 .collect(Collectors.joining("\n"));
 
         return """
-        You are a deterministic flashcard generation engine for a memory retention learning app.
+    You are a flashcard generation engine for a spaced-repetition learning app.
+    Your job is to turn each submitted topic into ONE clear, accurate, and easy-to-remember revision flashcard.
 
-        Submitted topics:
-        %s
+    Submitted topics:
+    %s
 
-        Task:
-        Generate EXACTLY one high-quality revision flashcard for EACH submitted topic.
+    Task:
+    Generate EXACTLY one flashcard for EACH submitted topic, in the same order they were submitted.
+    Total flashcards required: EXACTLY %d (one per topic).
 
-        Core interpretation rules:
+    How to interpret each topic:
 
-        1. Treat each submitted topic literally in meaning.
+    1. Take each topic at its literal meaning.
+    2. Keep the exact concept the user intended. Do NOT swap it for a related but different concept.
+    3. Do NOT make the concept broader or narrower than what was submitted.
+    4. Do NOT invent missing qualifiers, technologies, frameworks, domains, or subtypes that the topic does not mention.
+    5. If a topic has a spelling mistake, silently fix the spelling while keeping the intended meaning.
 
-        2. Preserve the intended concept exactly.
-           Do NOT reinterpret it as a related but different concept.
+    Field "conceptName":
+    - The submitted topic, with correct spelling and in Title Case.
+    - Keep the same concept that was submitted; only fix spelling and capitalization, never replace it with a different term.
 
-        3. Do NOT make a concept broader or narrower than submitted.
+    Field "question":
+    - Write ONE clear question that makes the learner recall the WHOLE concept, not just one small fact.
+    - Aim for genuine understanding of the idea, not interview trivia.
+    - Make the question complete and self-contained, so it makes sense on its own without seeing the topic name.
+    - Phrase it the way a learner would naturally review the topic.
+    - If the topic is specific, match the question to that level of specificity.
+    - Ask only one thing. Do NOT combine multiple questions into one.
 
-        4. Do NOT invent missing qualifiers, technologies, frameworks, domains, or subtypes.
+    Field "answer":
+    - Directly and fully answer the question.
+    - Use simple, everyday language that makes sense on the very first read.
+    - Avoid dense textbook definitions, heavy jargon, and robotic phrasing.
+    - If it aids understanding, include a short, concrete example.
 
-        5. If a submitted topic contains spelling mistakes, silently correct the spelling
-           while preserving the intended meaning.
+    Field "notes":
+    - Add extra useful information that is NOT already stated in the answer.
+    - Cover five distinct and important points that deepen understanding of the concept, such as common uses, key benefits, typical mistakes, helpful comparisons, or a real-world example.
+    - Explain each point clearly in a short sentence, not as a one-word label.
+    - Use a simple example wherever it makes a point easier to grasp.
+    - Use clear, friendly language that is easy to read even for someone seeing the topic for the first time.
+    - Write the notes as plain, connected sentences in a single flowing paragraph: no markdown, no HTML, no bullet symbols, no numbering, and no headings.
 
-        Flashcard generation rules:
+    Overall writing style for every card:
+    - Clear, calm, and beginner-friendly.
+    - Prefer short sentences over long, packed ones.
+    - Explain any unavoidable technical term in plain words.
 
-        - Generate EXACTLY one flashcard per submitted topic
-        - Total flashcards required: EXACTLY %d
-        
+    Return ONLY valid JSON in exactly this shape:
 
-        Question rules:
-        - The question must trigger recall of the WHOLE concept, not one isolated fact
-        - Prefer concept-level understanding over interview trivia
-        - The question should feel natural for revision
-        - The question should be complete and self-contained
-        - Prefer "What is X and another good follow up question" style when appropriate
-        - If the topic itself is specific, align the question to that specificity
-
-        Answer rules:
-        - Answer must directly answer to the question
-        - Answer should simple and easy to understanding,even if reading first time
-        - Strictly avoid overly academic, dense textbook definitions or robotic jargon.
-        - if required explain with simple example
-
-        Notes rules:
-        - Notes must contain additional useful information NOT already in the answer
-        - Notes should contains 5 additional important points
-        - Note should explained clearly not a short note
-        - Explain with example if needed
-        - Note should be in text, not md, not html, no numbering
-
-        Concept name rules:
-        - Correctly spelled
-        - Title Case
-        - Same as provided exactly
-
-        Return ONLY valid JSON:
-
+    {
+      "flashcardList": [
         {
-          "flashcardList": [
-            {
-              "conceptName": "string",
-              "question": "string",
-              "answer": "string",
-              "notes": "string"
-            }
-          ]
+          "conceptName": "string",
+          "question": "string",
+          "answer": "string",
+          "notes": "string"
         }
+      ]
+    }
 
-        Strict requirements:
-        - EXACTLY %d flashcards
-        - JSON only
-        - No markdown
-        - No explanation
-        - No extra text
-        """.formatted(numberedTopics, count, count);
+    Strict requirements:
+    - EXACTLY %d flashcards, one per submitted topic, in submission order.
+    - Valid JSON only.
+    - No markdown.
+    - No explanation.
+    - No extra text before or after the JSON.
+    """.formatted(numberedTopics, count, count);
     }
 }

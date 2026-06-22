@@ -1,12 +1,11 @@
 package com.anupam.reminiscence.ai_provider;
 
-import com.anupam.reminiscence.dto.ai.FlashcardResponse;
-import com.anupam.reminiscence.dto.ai.GroqResponse;
-import com.anupam.reminiscence.dto.ai.NewTopicsResponse;
-import com.anupam.reminiscence.dto.ai.TopicsResponse;
+import com.anupam.reminiscence.dto.ai.*;
 import com.anupam.reminiscence.utils.PromptBuilder;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
@@ -18,8 +17,9 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service("GITHUBMODELS")
-@Order(4)
+@Order(1)
 @RequiredArgsConstructor
+@Slf4j
 public class GitHubModelsProvider implements AIProvider {
 
     @Value("${github.models.api.key}")
@@ -28,12 +28,10 @@ public class GitHubModelsProvider implements AIProvider {
     private final ObjectMapper objectMapper;
     private final HttpClient httpClient = HttpClient.newHttpClient();
 
-    // The exact model ID slug as per GitHub Marketplace
     private static final String MODEL_NAME = "openai/gpt-4.1";
-
-    // CORRECT ENDPOINT FOR GITHUB MODELS
     private static final String API_URL = "https://models.github.ai/inference/chat/completions";
 
+    // ---------- EXISTING METHODS (unchanged) ----------
     @Override
     public TopicsResponse extractTopics(String text) {
         try {
@@ -67,6 +65,7 @@ public class GitHubModelsProvider implements AIProvider {
         }
     }
 
+    // ---------- ORIGINAL CALL METHOD (unchanged) ----------
     private String callGitHubModels(String prompt) throws Exception {
         String requestJson = """
                 {
@@ -92,7 +91,6 @@ public class GitHubModelsProvider implements AIProvider {
                 .uri(URI.create(API_URL))
                 .header("Authorization", "Bearer " + apiKey)
                 .header("Content-Type", "application/json")
-                // MANDATORY HEADER FOR GITHUB MODELS API
                 .header("X-GitHub-Api-Version", "2022-11-28")
                 .POST(HttpRequest.BodyPublishers.ofString(requestJson))
                 .build();
@@ -104,7 +102,77 @@ public class GitHubModelsProvider implements AIProvider {
         }
 
         GroqResponse ghResponse = objectMapper.readValue(response.body(), GroqResponse.class);
+        return ghResponse.getChoices()
+                .get(0)
+                .getMessage()
+                .getContent()
+                .trim();
+    }
 
+    // ---------- NEW METHODS ----------
+    @Override
+    public String classifyTopic(String topic) {
+        try {
+            String prompt = PromptBuilder.buildClassificationPrompt(topic);
+            String raw = callGitHubModels(prompt, 0.1);
+            JsonNode root = objectMapper.readTree(raw);
+            String type = root.get("type").asText().toUpperCase();
+            log.info("Classified topic '{}' as: {}", topic, type);
+            return type;
+        } catch (Exception e) {
+            log.error("Classification failed for topic: {}, falling back to EXPLANATION", topic, e);
+            return "EXPLANATION";
+        }
+    }
+
+    @Override
+    public Flashcard generateFlashcardWithType(String topic, String type) {
+        try {
+            String prompt = PromptBuilder.buildTypedFlashcardPrompt(topic, type);
+            String raw = callGitHubModels(prompt, 0.4);
+            return objectMapper.readValue(raw, Flashcard.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Typed flashcard generation failed for topic: " + topic, e);
+        }
+    }
+
+    // ---------- NEW OVERLOADED CALL METHOD (with temperature) ----------
+    private String callGitHubModels(String prompt, double temperature) throws Exception {
+        String requestJson = """
+                {
+                  "model": "%s",
+                  "messages": [
+                    {
+                      "role": "system",
+                      "content": "You are a friendly, expert human tutor. Your goal is to help a student learn. Use simple, conversational language and analogies."
+                    },
+                    {
+                      "role": "user",
+                      "content": %s
+                    }
+                  ],
+                  "response_format": {
+                    "type": "json_object"
+                  },
+                  "temperature": %s
+                }
+                """.formatted(MODEL_NAME, objectMapper.writeValueAsString(prompt), temperature);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_URL))
+                .header("Authorization", "Bearer " + apiKey)
+                .header("Content-Type", "application/json")
+                .header("X-GitHub-Api-Version", "2022-11-28")
+                .POST(HttpRequest.BodyPublishers.ofString(requestJson))
+                .build();
+
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+        if (response.statusCode() != 200) {
+            throw new RuntimeException("GitHub Models Error! Status: " + response.statusCode() + " Body: " + response.body());
+        }
+
+        GroqResponse ghResponse = objectMapper.readValue(response.body(), GroqResponse.class);
         return ghResponse.getChoices()
                 .get(0)
                 .getMessage()

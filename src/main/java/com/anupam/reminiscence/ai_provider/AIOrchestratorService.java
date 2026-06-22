@@ -1,5 +1,6 @@
 package com.anupam.reminiscence.ai_provider;
 
+import com.anupam.reminiscence.dto.ai.Flashcard;
 import com.anupam.reminiscence.dto.ai.FlashcardResponse;
 import com.anupam.reminiscence.dto.ai.NewTopicsResponse;
 import com.anupam.reminiscence.dto.ai.TopicsResponse;
@@ -52,4 +53,28 @@ public class AIOrchestratorService {
         }
         throw new RuntimeException("All AI providers failed during flashcard generation");
     }
+    public Flashcard generateFlashcardWithType(String topic, String type){
+        for (AIProvider provider : providers) {
+            try {
+                log.info("Using provider for flashcard generation with type: {}", provider.getProviderName());
+                return provider.generateFlashcardWithType(topic,type);
+            } catch (Exception ex) {
+                log.error("Provider {} failed flashcard generation: {}", provider.getProviderName(), ex.getMessage());
+            }
+        }
+        throw new RuntimeException("All AI providers failed during flashcard generation");
+    }
+
+    public String classifyTopic(String topic){
+       for (AIProvider provider : providers) {
+        try {
+            log.info("Using provider for classifyTopic: {}", provider.getProviderName());
+            return provider.classifyTopic(topic);
+        } catch (Exception ex) {
+            log.error("Provider {} failed classify topic: {}", provider.getProviderName(), ex.getMessage());
+        }
+    }
+        throw new RuntimeException("All AI providers failed during classify topic generation");
+}
+
 }

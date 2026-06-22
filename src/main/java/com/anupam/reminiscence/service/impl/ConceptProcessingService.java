@@ -107,18 +107,16 @@ public class ConceptProcessingService {
             List<Flashcard> allGeneratedFlashcards = new ArrayList<>();
             int chunkSize = 4;
 
-            for (int i = 0; i < confirmedNewTopics.size(); i += chunkSize) {
-                int end = Math.min(i + chunkSize, confirmedNewTopics.size());
-                List<String> chunk = confirmedNewTopics.subList(i, end);
+            for (String topic: confirmedNewTopics) {
 
                 try {
-                    FlashcardResponse response = aiOrchestratorService.generateFlashcards(chunk);
-                    if (response.getFlashcardList() != null) {
-                        allGeneratedFlashcards.addAll(response.getFlashcardList());
+                    String type = aiOrchestratorService.classifyTopic(topic);
+                    Flashcard response = aiOrchestratorService.generateFlashcardWithType(topic,type);
+                    if (response != null) {
+                        allGeneratedFlashcards.add(response);
                     }
                 } catch (Exception e) {
-                    log.error("Failed to generate chunk starting at index {}: {}", i, e.getMessage());
-                    // Depending on your requirements, you can either continue or throw
+                    log.error("Failed to generate fl for {}: {}", topic, e.getMessage());
                 }
             }
 

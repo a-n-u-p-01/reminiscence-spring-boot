@@ -82,7 +82,7 @@ public class DailyEntryProcessingScheduler {
                  * User never completed reviews.
                  * Skip today's processing.
                  */
-                if (pendingReviewCount > 10) {
+                if (pendingReviewCount > 100) {
 
                     log.info("Skipping entryId={} because user has {} pending reviews", entry.getId(), pendingReviewCount);
 

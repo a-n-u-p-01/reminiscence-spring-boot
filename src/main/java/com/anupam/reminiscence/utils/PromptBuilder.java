@@ -166,7 +166,7 @@ Strict requirements:
             """;
             case "LIST" -> """
             Structure the flashcard as a List / Enumeration:
-            - Answer: Start with a brief definition, then provide a bulleted list of key items with a short description for each.
+            - Answer: Start with a brief definition, then provide all list of key items with a short description for each. and list should cover all items present in topic
             - Question: Ask "What are the key X and what do they do?"
             """;
             case "STEPS" -> """
@@ -222,7 +222,7 @@ Strict requirements:
     - Avoid dense textbook definitions, heavy jargon, and robotic phrasing.
     - Follow the structure specified for the required type.
     - If it aids understanding, include a short, concrete example.
-    - Only 2 to 3 sentence.
+    - Only 2 to 3 sentence. if needed increase the sentece to cover.
 
     Field "notes":
     - Add extra useful information that is NOT already stated in the answer.
